@@ -1,4 +1,6 @@
 # ipfs-encryption
+
+[![Greenkeeper badge](https://badges.greenkeeper.io/richardschneider/ipfs-encryption.svg)](https://greenkeeper.io/)
 Encrypting IPFS data
 
 This is a collection of notes and references to other projects that will/do encrypt data in IPFS.
