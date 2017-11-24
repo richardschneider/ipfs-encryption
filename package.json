@@ -4,7 +4,7 @@
   "description": "Encrypting IPFS data",
   "main": "src/index.js",
   "scripts": {
-    "test": "mocha --timeout 20000"
+    "test": "mocha --timeout 25000"
   },
   "repository": {
     "type": "git",
@@ -28,6 +28,7 @@
   },
   "devDependencies": {
     "chai": "^4.1.2",
+    "chai-string": "^1.4.0",
     "dirty-chai": "^2.0.1",
     "mocha": "^4.0.1",
     "rimraf": "^2.6.2"

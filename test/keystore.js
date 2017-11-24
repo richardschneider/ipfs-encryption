@@ -5,6 +5,7 @@ const chai = require('chai')
 const dirtyChai = require('dirty-chai')
 const expect = chai.expect
 chai.use(dirtyChai)
+chai.use(require('chai-string'))
 const Keystore = require('..').Keystore
 const os = require('os')
 const path = require('path')
@@ -72,10 +73,22 @@ describe('keystore', () => {
       })
     })
 
+    it('can create ED25519 key', () => {
+      expect.fail()
+    })
+
     it('creates a PKCS #8 pem file in the store', () => {
       const pem = path.join(store, rsaKeyName + '.pem')
       expect(fs.existsSync(pem)).to.be.true()
       expect(fs.lstatSync(pem).isFile()).to.be.true()
+      const contents = fs.readFileSync(pem, 'utf8')
+      expect(contents).to.startsWith('-----BEGIN')
+    })
+
+    it('creates a PKCS #8 encrypted pem file in the store', () => {
+      const pem = path.join(store, rsaKeyName + '.pem')
+      const contents = fs.readFileSync(pem, 'utf8')
+      expect(contents).to.startsWith('-----BEGIN ENCRYPTED PRIVATE KEY-----')
     })
 
     it('does not overwrite existing key', (done) => {
@@ -83,11 +96,6 @@ describe('keystore', () => {
         expect(err).to.exist()
         done()
       })
-    })
-
-
-    it('can create ED25519 key', () => {
-      expect.fail()
     })
 
     it('cannot create the "self" key', (done) => {
