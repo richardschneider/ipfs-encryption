@@ -6,6 +6,8 @@ const RSA = require('node-rsa')
 const path = require('path')
 const fs = require('fs')
 
+const keyExtension = '.pem'
+
 const defaultOptions = {
   createIfNeeded: true
 }
@@ -28,7 +30,7 @@ class Keystore {
       throw new Error('passPhrase is required')
     }
 
-    this.store = opts.store;
+    this.store = opts.store
   }
   
   createKey (name, type, size, callback) {
@@ -36,7 +38,7 @@ class Keystore {
       return callback(new Error(`Invalid key name '${name}'`))
     }
 
-    const keyPath = path.join(this.store, name + '.pem');
+    const keyPath = path.join(this.store, name + keyExtension);
     if(fs.existsSync(keyPath))
       return callback(new Error(`Key '${name} already exists'`))
 
@@ -56,8 +58,18 @@ class Keystore {
   }
   
   listKeys(callback) {
-    //throw new Error('NYI')
-    callback()
+    fs.readdir(this.store, (err, filenames ) => {
+      if (err) return callback(err)
+
+      const keys = filenames
+        .filter((f) => f.endsWith(keyExtension))
+        .map((f) => {
+          return {
+            KeyName: f.slice(0, -keyExtension.length)
+          }
+        })
+      callback(null, keys)
+    })
   }
   
   removeKey (name, callback) {

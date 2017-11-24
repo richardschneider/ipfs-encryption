@@ -15,6 +15,7 @@ const rimraf = require('rimraf')
 describe('keystore', () => {
   const store = path.join(os.tmpdir(), 'test-keystore')
   const passPhrase = 'this is not a secure phrase'
+  const rsaKeyName = 'rsa-key'
   
   after((done) => {
     rimraf(store, done)
@@ -64,7 +65,6 @@ describe('keystore', () => {
 
   describe('key creation', () => {
     const ks = new Keystore({ store: store, passPhrase: passPhrase})
-    const rsaKeyName = 'rsa-key'
 
     it('can create RSA key', (done) => {
       ks.createKey(rsaKeyName, 'rsa', 2048, (err) => {
@@ -105,7 +105,7 @@ describe('keystore', () => {
       })
     })
 
-    describe('NIST SP 800-131A', () => {
+    describe('implements NIST SP 800-131A', () => {
       it('disallows RSA length < 2048', (done) => {
         ks.createKey('bad-nist-rsa', 'rsa', 1024, (err) => {
           expect(err).to.exist()
@@ -115,6 +115,19 @@ describe('keystore', () => {
       })
     })
 
+  })
+
+  describe('key lists', () => {
+    const ks = new Keystore({ store: store, passPhrase: passPhrase})
+
+    it('contains existing keys', (done) => {
+      ks.listKeys((err, keys) => {
+        expect(err).to.not.exist()
+        expect(keys).to.exist()
+        expect(keys).to.deep.include({ KeyName: rsaKeyName })
+        done()
+      })
+    })
   })
 
   describe('key removal', () => {
