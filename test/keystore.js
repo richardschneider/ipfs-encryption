@@ -9,11 +9,16 @@ const Keystore = require('..').Keystore
 const os = require('os')
 const path = require('path')
 const fs = require('fs')
+const rimraf = require('rimraf')
 
 describe('keystore', () => {
   const store = path.join(os.tmpdir(), 'test-keystore')
   const passPhrase = 'this is not a secure phrase'
   
+  after((done) => {
+    rimraf(store, done)
+  })
+
   it('needs a pass phrase to encrypt a key', () => {
     expect(() => new Keystore({ store: store})).to.throw()
   })
@@ -54,6 +59,65 @@ describe('keystore', () => {
         expect(err).to.have.property('message', 'Invalid key name \'undefined\'')
       })
     })    
+  })
+
+  describe('key creation', () => {
+    const ks = new Keystore({ store: store, passPhrase: passPhrase})
+    const rsaKeyName = 'rsa-key'
+
+    it('can create RSA key', (done) => {
+      ks.createKey(rsaKeyName, 'rsa', 2048, (err) => {
+        expect(err).to.not.exist()
+        done()
+      })
+    })
+
+    it('creates a PKCS #8 pem file in the store', () => {
+      const pem = path.join(store, rsaKeyName + '.pem')
+      expect(fs.existsSync(pem)).to.be.true()
+      expect(fs.lstatSync(pem).isFile()).to.be.true()
+    })
+
+    it('does not overwrite existing key', (done) => {
+      ks.createKey(rsaKeyName, 'rsa', 2048, (err) => {
+        expect(err).to.exist()
+        done()
+      })
+    })
+
+
+    it('can create ED25519 key', () => {
+      expect.fail()
+    })
+
+    it('cannot create the "self" key', (done) => {
+      ks.createKey('self', 'rsa', 2048, (err) => {
+        expect(err).to.exist()
+        done()
+      })
+    })
+
+    describe('NIST SP 800-131A', () => {
+      it('disallows RSA length < 2048', (done) => {
+        ks.createKey('bad-nist-rsa', 'rsa', 1024, (err) => {
+          expect(err).to.exist()
+          expect(err).to.have.property('message', 'Invalid RSA key size 1024')
+          done()
+        })
+      })
+    })
+
+  })
+
+  describe('key removal', () => {
+    const ks = new Keystore({ store: store, passPhrase: passPhrase})
+
+    it('cannot remove the "self" key', (done) => {
+      ks.removeKey('self', (err) => {
+        expect(err).to.exist()
+        done()
+      })
+    })
   })
 
 })
