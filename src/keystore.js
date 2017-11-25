@@ -78,10 +78,28 @@ class Keystore {
     }
 
     const keyPath = path.join(this.store, name + keyExtension)
-    if(!fs.existsSync(keyPath))
+    if(!fs.existsSync(keyPath)) {
       return callback(new Error(`Key '${name} does not exist'`))
+    }
     
     fs.unlink(keyPath, callback)
+  }
+
+  encrypt (name, data, callback) {
+    if (!validateKeyName(name)) {
+      return callback(new Error(`Invalid key name '${name}'`))
+    }
+
+    const keyPath = path.join(this.store, name + keyExtension)
+    if(!fs.existsSync(keyPath)) {
+      return callback(new Error(`Key '${name} does not exist'`))
+    }
+    
+    if (!Buffer.isBuffer(data)) {
+      return callback(new Error('Data is required'))
+    }
+    
+    callback(null, {})
   }
 
 }

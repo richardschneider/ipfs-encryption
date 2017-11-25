@@ -130,6 +130,34 @@ describe('keystore', () => {
     })
   })
 
+  describe('encryption', () => {
+    const ks = new Keystore({ store: store, passPhrase: passPhrase})
+    const plainData = Buffer.from('This a message from Alice to Bob')
+    
+    it('requires a known key name', (done) => {
+      ks.encrypt('not-there', plainData, (err) => {
+        expect(err).to.exist()
+        done()
+      })
+    })
+  
+    it('requires some data', (done) => {
+      ks.encrypt(rsaKeyName, null, (err) => {
+        expect(err).to.exist()
+        done()
+      })
+    })
+
+    it('generates encrypted data and encryption algorithm', () => {
+      ks.encrypt(rsaKeyName, plainData, (err, res) => {
+        expect(err).to.not.exist()
+        expect(res).to.have.property('data')
+        expect(res).to.have.property('algorithm')
+        done()
+      })
+    })
+  })
+  
   describe('key removal', () => {
     const ks = new Keystore({ store: store, passPhrase: passPhrase})
 
@@ -154,5 +182,4 @@ describe('keystore', () => {
       })
     })
 })
-
 })
