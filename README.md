@@ -7,4 +7,5 @@ Everything is maintained in the [issues](https://github.com/richardschneider/ipf
 
 Keystore implementations
 - JS is [here](https://github.com/richardschneider/ipfs-encryption/blob/master/src/keystore.md) and as always a WIP
+- GO id [there](https://github.com/ipfs/go-ipfs/tree/e8477b50c907c1544f8a7e15334d6fb595baac19/keystore), different names but same concepts
 - CS coming real soon
