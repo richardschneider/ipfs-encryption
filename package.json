@@ -23,7 +23,7 @@
   "homepage": "https://github.com/richardschneider/ipfs-encryption#readme",
   "dependencies": {
     "mkdirp": "^0.5.1",
-    "node-rsa": "^0.4.2",
+    "node-forge": "^0.7.1",
     "sanitize-filename": "^1.6.1"
   },
   "devDependencies": {

@@ -2,7 +2,9 @@
 
 const mkdirp = require('mkdirp')
 const sanitize = require("sanitize-filename");
-const RSA = require('node-rsa')
+const forge = require('node-forge');
+const pki = forge.pki
+const rsa = forge.pki.rsa
 const path = require('path')
 const fs = require('fs')
 
@@ -31,6 +33,7 @@ class Keystore {
     }
 
     this.store = opts.store
+    this._ = () => opts.passPhrase
   }
   
   createKey (name, type, size, callback) {
@@ -47,9 +50,13 @@ class Keystore {
         if (size < 2048) {
           return callback(new Error(`Invalid RSA key size ${size}`))
         }
-        const key = new RSA({b: size})
-        const pem = key.exportKey('pkcs8')
-        return fs.writeFile(keyPath, pem, callback)
+        rsa.generateKeyPair({bits: size, workers: -1}, (err, keypair) => {
+          if (err) return callback(err);
+
+          const pem = pki.encryptRsaPrivateKey(keypair.privateKey, this._());
+          return fs.writeFile(keyPath, pem, callback)
+        })
+        break;
 
       default:
         return callback(new Error(`Invalid key type '${type}'`))
