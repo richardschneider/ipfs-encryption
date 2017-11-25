@@ -16,7 +16,7 @@ describe('keystore', () => {
   const store = path.join(os.tmpdir(), 'test-keystore')
   const passPhrase = 'this is not a secure phrase'
   const rsaKeyName = 'rsa-key'
-  
+
   after((done) => {
     rimraf(store, done)
   })
@@ -24,7 +24,11 @@ describe('keystore', () => {
   it('needs a pass phrase to encrypt a key', () => {
     expect(() => new Keystore({ store: store})).to.throw()
   })
-  
+
+  it ('needs a NIST SP 800-132 non-weak pass phrase', () => {
+    expect(() => new Keystore({ store: store, passPhrase: '< 20 character'})).to.throw()
+  })
+
   it('needs a store to persist a key', () => {
     expect(() => new Keystore({ passPhrase: passPhrase})).to.throw()
   })

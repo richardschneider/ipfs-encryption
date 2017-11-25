@@ -28,8 +28,8 @@ class Keystore {
       mkdirp.sync(opts.store)
     }
 
-    if (!opts.passPhrase) {
-      throw new Error('passPhrase is required')
+    if (!opts.passPhrase || opts.passPhrase.length < 20) {
+      throw new Error('passPhrase is required of at least 20 characters')
     }
 
     this.store = opts.store
