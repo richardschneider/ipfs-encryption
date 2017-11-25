@@ -139,6 +139,20 @@ describe('keystore', () => {
         done()
       })
     })
-  })
+
+    it('cannot remove an unknown key', (done) => {
+      ks.removeKey('not-there', (err) => {
+        expect(err).to.exist()
+        done()
+      })
+    })
+
+    it('can remove a known key', (done) => {
+      ks.removeKey(rsaKeyName, (err) => {
+        expect(err).to.not.exist()
+        done()
+      })
+    })
+})
 
 })

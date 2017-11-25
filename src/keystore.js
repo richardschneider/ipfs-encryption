@@ -38,7 +38,7 @@ class Keystore {
       return callback(new Error(`Invalid key name '${name}'`))
     }
 
-    const keyPath = path.join(this.store, name + keyExtension);
+    const keyPath = path.join(this.store, name + keyExtension)
     if(fs.existsSync(keyPath))
       return callback(new Error(`Key '${name} already exists'`))
 
@@ -76,9 +76,12 @@ class Keystore {
     if (!validateKeyName(name) || name === 'self') {
       return callback(new Error(`Invalid key name '${name}'`))
     }
+
+    const keyPath = path.join(this.store, name + keyExtension)
+    if(!fs.existsSync(keyPath))
+      return callback(new Error(`Key '${name} does not exist'`))
     
-    //throw new Error('NYI')
-    callback()
+    fs.unlink(keyPath, callback)
   }
 
 }
