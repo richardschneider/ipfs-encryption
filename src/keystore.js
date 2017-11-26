@@ -111,7 +111,7 @@ class Keystore {
     }
 
     try {
-    const key = fs.readFileSync(keyPath, 'utf8')
+      const key = fs.readFileSync(keyPath, 'utf8')
       const privateKey = {
         key: key,
         passphrase: this._(),
@@ -119,7 +119,7 @@ class Keystore {
       }
       const res = {
         algorithm: 'RSA_PKCS1_PADDING',
-        cipherData: crypto.privateEncrypt(privateKey, plain)
+        cipherData: crypto.publicEncrypt(privateKey, plain)
       }
       callback(null, res)
     } catch (err) {
@@ -145,10 +145,12 @@ class Keystore {
       const key = fs.readFileSync(keyPath, 'utf8')
       const privateKey = {
         key: key,
-        passphrase: this._()
+        passphrase: this._(),
+        padding: crypto.constants.RSA_PKCS1_PADDING
       }
-      callback(null, crypto.publicDecrypt(privateKey, cipher))
+      callback(null, crypto.privateDecrypt(privateKey, cipher))
     } catch (err) {
+      console.log(err)
       callback(err)
     }
   }
