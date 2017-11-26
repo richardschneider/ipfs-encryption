@@ -3,6 +3,7 @@
 const mkdirp = require('mkdirp')
 const sanitize = require("sanitize-filename")
 const forge = require('node-forge')
+const crypto = require('crypto')
 const path = require('path')
 const fs = require('fs')
 
@@ -32,7 +33,7 @@ class Keystore {
     //See https://cryptosense.com/parameter-choice-for-pbkdf2/
     const klen = 512 / 8
     const icount = 10000
-    const salt = forge.random.getBytesSync(klen)
+    const salt = 'xyzzy'
     let dek = forge.pkcs5.pbkdf2(opts.passPhrase, salt, icount, klen, 'sha512')
     dek = forge.util.bytesToHex(dek)
 
@@ -95,23 +96,62 @@ class Keystore {
     fs.unlink(keyPath, callback)
   }
 
-  encrypt (name, data, callback) {
+  _encrypt (name, plain, callback) {
     if (!validateKeyName(name)) {
       return callback(new Error(`Invalid key name '${name}'`))
+    }
+
+    if (!Buffer.isBuffer(plain)) {
+      return callback(new Error('Data is required'))
     }
 
     const keyPath = path.join(this.store, name + keyExtension)
     if(!fs.existsSync(keyPath)) {
       return callback(new Error(`Key '${name} does not exist'`))
     }
-    
-    if (!Buffer.isBuffer(data)) {
-      return callback(new Error('Data is required'))
+
+    try {
+    const key = fs.readFileSync(keyPath, 'utf8')
+      const privateKey = {
+        key: key,
+        passphrase: this._(),
+        padding: crypto.constants.RSA_PKCS1_PADDING
+      }
+      const res = {
+        algorithm: 'RSA_PKCS1_PADDING',
+        cipherData: crypto.privateEncrypt(privateKey, plain)
+      }
+      callback(null, res)
+    } catch (err) {
+      callback(err)
     }
-    
-    callback(null, {})
   }
 
+  _decrypt (name, cipher, callback) {
+    if (!validateKeyName(name)) {
+      return callback(new Error(`Invalid key name '${name}'`))
+    }
+
+    if (!Buffer.isBuffer(cipher)) {
+      return callback(new Error('Data is required'))
+    }
+
+    const keyPath = path.join(this.store, name + keyExtension)
+    if(!fs.existsSync(keyPath)) {
+      return callback(new Error(`Key '${name} does not exist'`))
+    }
+
+    try {
+      const key = fs.readFileSync(keyPath, 'utf8')
+      const privateKey = {
+        key: key,
+        passphrase: this._()
+      }
+      callback(null, crypto.publicDecrypt(privateKey, cipher))
+    } catch (err) {
+      callback(err)
+    }
+  }
 }
 
 module.exports = Keystore

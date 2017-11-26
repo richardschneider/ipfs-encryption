@@ -139,27 +139,40 @@ describe('keystore', () => {
     const plainData = Buffer.from('This a message from Alice to Bob')
     
     it('requires a known key name', (done) => {
-      ks.encrypt('not-there', plainData, (err) => {
+      ks._encrypt('not-there', plainData, (err) => {
         expect(err).to.exist()
         done()
       })
     })
   
     it('requires some data', (done) => {
-      ks.encrypt(rsaKeyName, null, (err) => {
+      ks._encrypt(rsaKeyName, null, (err) => {
         expect(err).to.exist()
         done()
       })
     })
 
-    it('generates encrypted data and encryption algorithm', () => {
-      ks.encrypt(rsaKeyName, plainData, (err, res) => {
+    it('generates encrypted data and encryption algorithm', (done) => {
+      ks._encrypt(rsaKeyName, plainData, (err, res) => {
         expect(err).to.not.exist()
-        expect(res).to.have.property('data')
+        expect(res).to.have.property('cipherData')
         expect(res).to.have.property('algorithm')
         done()
       })
     })
+
+    it('decrypts', (done) => {
+      ks._encrypt(rsaKeyName, plainData, (err, res) => {
+        expect(err).to.not.exist()
+        expect(res).to.have.property('cipherData')
+        ks._decrypt(rsaKeyName, res.cipherData, (err, plain) => {
+          expect(err).to.not.exist()
+          expect(plain.toString()).to.equal(plainData.toString())
+          done()
+        })
+      })
+    })
+
   })
   
   describe('key removal', () => {
