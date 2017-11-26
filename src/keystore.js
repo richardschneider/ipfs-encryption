@@ -1,10 +1,8 @@
 'use strict'
 
 const mkdirp = require('mkdirp')
-const sanitize = require("sanitize-filename");
-const forge = require('node-forge');
-const pki = forge.pki
-const rsa = forge.pki.rsa
+const sanitize = require("sanitize-filename")
+const forge = require('node-forge')
 const path = require('path')
 const fs = require('fs')
 
@@ -31,11 +29,17 @@ class Keystore {
     if (!opts.passPhrase || opts.passPhrase.length < 20) {
       throw new Error('passPhrase is required of at least 20 characters')
     }
+    //See https://cryptosense.com/parameter-choice-for-pbkdf2/
+    const klen = 512 / 8
+    const icount = 10000
+    const salt = forge.random.getBytesSync(klen)
+    let dek = forge.pkcs5.pbkdf2(opts.passPhrase, salt, icount, klen, 'sha512')
+    dek = forge.util.bytesToHex(dek)
 
     this.store = opts.store
-    this._ = () => opts.passPhrase
+    this._ = () => dek
   }
-  
+
   createKey (name, type, size, callback) {
     if (!validateKeyName(name) || name === 'self') {
       return callback(new Error(`Invalid key name '${name}'`))
@@ -50,10 +54,10 @@ class Keystore {
         if (size < 2048) {
           return callback(new Error(`Invalid RSA key size ${size}`))
         }
-        rsa.generateKeyPair({bits: size, workers: -1}, (err, keypair) => {
+        forge.pki.rsa.generateKeyPair({bits: size, workers: -1}, (err, keypair) => {
           if (err) return callback(err);
 
-          const pem = pki.encryptRsaPrivateKey(keypair.privateKey, this._());
+          const pem = forge.pki.encryptRsaPrivateKey(keypair.privateKey, this._());
           return fs.writeFile(keyPath, pem, callback)
         })
         break;
@@ -61,9 +65,8 @@ class Keystore {
       default:
         return callback(new Error(`Invalid key type '${type}'`))
     }
-
   }
-  
+
   listKeys(callback) {
     fs.readdir(this.store, (err, filenames ) => {
       if (err) return callback(err)
@@ -78,7 +81,7 @@ class Keystore {
       callback(null, keys)
     })
   }
-  
+
   removeKey (name, callback) {
     if (!validateKeyName(name) || name === 'self') {
       return callback(new Error(`Invalid key name '${name}'`))
