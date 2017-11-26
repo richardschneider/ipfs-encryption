@@ -78,10 +78,6 @@ describe('keystore', () => {
       })
     })
 
-    it('can create ED25519 key', () => {
-      expect.fail()
-    })
-
     it('creates a PKCS #8 pem file in the store', () => {
       const pem = path.join(store, rsaKeyName + '.pem')
       expect(fs.existsSync(pem)).to.be.true()
