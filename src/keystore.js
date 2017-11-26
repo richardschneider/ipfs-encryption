@@ -106,25 +106,25 @@ class Keystore {
     }
 
     const keyPath = path.join(this.store, name + keyExtension)
-    if(!fs.existsSync(keyPath)) {
-      return callback(new Error(`Key '${name} does not exist'`))
-    }
-
-    try {
-      const key = fs.readFileSync(keyPath, 'utf8')
-      const privateKey = {
-        key: key,
-        passphrase: this._(),
-        padding: crypto.constants.RSA_PKCS1_PADDING
+    fs.readFile(keyPath, 'utf8', (err, key) => {
+      if (err) {
+        return callback(new Error(`Key '${name} does not exist. ${err.message}'`))
       }
-      const res = {
-        algorithm: 'RSA_PKCS1_PADDING',
-        cipherData: crypto.publicEncrypt(privateKey, plain)
+      try {
+        const privateKey = {
+          key: key,
+          passphrase: this._(),
+          padding: crypto.constants.RSA_PKCS1_PADDING
+        }
+        const res = {
+          algorithm: 'RSA_PKCS1_PADDING',
+          cipherData: crypto.publicEncrypt(privateKey, plain)
+        }
+        callback(null, res)
+      } catch (err) {
+        callback(err)
       }
-      callback(null, res)
-    } catch (err) {
-      callback(err)
-    }
+    })
   }
 
   _decrypt (name, cipher, callback) {
@@ -137,23 +137,23 @@ class Keystore {
     }
 
     const keyPath = path.join(this.store, name + keyExtension)
-    if(!fs.existsSync(keyPath)) {
-      return callback(new Error(`Key '${name} does not exist'`))
-    }
-
-    try {
-      const key = fs.readFileSync(keyPath, 'utf8')
-      const privateKey = {
-        key: key,
-        passphrase: this._(),
-        padding: crypto.constants.RSA_PKCS1_PADDING
+    fs.readFile(keyPath, 'utf8', (err, key) => {
+      if (err) {
+        return callback(new Error(`Key '${name} does not exist. ${err.message}'`))
       }
-      callback(null, crypto.privateDecrypt(privateKey, cipher))
-    } catch (err) {
-      console.log(err)
-      callback(err)
-    }
+      try {
+        const privateKey = {
+          key: key,
+          passphrase: this._(),
+          padding: crypto.constants.RSA_PKCS1_PADDING
+        }
+        callback(null, crypto.privateDecrypt(privateKey, cipher))
+      } catch (err) {
+        callback(err)
+      }
+    })
   }
+
 }
 
 module.exports = Keystore

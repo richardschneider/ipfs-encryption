@@ -70,7 +70,8 @@ describe('keystore', () => {
   describe('key creation', () => {
     const ks = new Keystore({ store: store, passPhrase: passPhrase})
 
-    it('can create RSA key', (done) => {
+    it('can create RSA key', function (done) {
+      this.timeout(20 * 1000)
       ks.createKey(rsaKeyName, 'rsa', 2048, (err) => {
         expect(err).to.not.exist()
         done()
