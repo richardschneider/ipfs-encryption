@@ -32,9 +32,20 @@ class Keystore {
   constructor (options) {
     const opts = deepmerge(defaultOptions, options)
     
-    if (opts.createIfNeeded) {
-      mkdirp.sync(opts.store)
+    // Get the keystore folder.
+    if (!opts.store || opts.store.trim().length === 0) {
+      throw new Error('store is required')
     }
+    opts.store = path.normalize(opts.store)
+    if (!fs.existsSync(opts.store)) {
+      if (opts.createIfNeeded) {
+        mkdirp.sync(opts.store)
+      }
+      else {
+        throw new Error(`The store '${opts.store}' does not exist`)
+      }
+    }
+    this.store = opts.store
 
     // Enfore NIST SP 800-132
     const minKeyLength = 112 / 8
@@ -53,6 +64,7 @@ class Keystore {
       throw new Error(`dek.iterationCount must be least ${minIterationCount}`)
     }
 
+    // Create the derived encrypting key
     let dek = forge.pkcs5.pbkdf2(
       opts.passPhrase,
       opts.dek.salt,
@@ -60,8 +72,6 @@ class Keystore {
       opts.dek.keyLength,
       opts.dek.hash)
     dek = forge.util.bytesToHex(dek)
-
-    this.store = opts.store
     this._ = () => dek
   }
 
