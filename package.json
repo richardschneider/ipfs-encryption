@@ -22,6 +22,7 @@
   },
   "homepage": "https://github.com/richardschneider/ipfs-encryption#readme",
   "dependencies": {
+    "async": "^2.6.0",
     "deepmerge": "^2.0.1",
     "mkdirp": "^0.5.1",
     "node-forge": "^0.7.1",

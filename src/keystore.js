@@ -1,5 +1,6 @@
 'use strict'
 
+const async = require('async')
 const mkdirp = require('mkdirp')
 const sanitize = require("sanitize-filename")
 const forge = require('node-forge')
@@ -7,6 +8,7 @@ const deepmerge = require('deepmerge')
 const crypto = require('crypto')
 const path = require('path')
 const fs = require('fs')
+const util = require('./util')
 
 const keyExtension = '.pem'
 
@@ -73,6 +75,9 @@ class Keystore {
       opts.dek.hash)
     dek = forge.util.bytesToHex(dek)
     this._ = () => dek
+    
+    // JS magick
+    this._getKeyInfo = this._getKeyInfo.bind(this)
   }
 
   createKey (name, type, size, callback) {
@@ -106,14 +111,10 @@ class Keystore {
     fs.readdir(this.store, (err, filenames ) => {
       if (err) return callback(err)
 
-      const keys = filenames
+      const names = filenames
         .filter((f) => f.endsWith(keyExtension))
-        .map((f) => {
-          return {
-            KeyName: f.slice(0, -keyExtension.length)
-          }
-        })
-      callback(null, keys)
+        .map((f) => f.slice(0, -keyExtension.length))
+      async.map(names, this._getKeyInfo, callback)
     })
   }
 
@@ -130,6 +131,66 @@ class Keystore {
     fs.unlink(keyPath, callback)
   }
 
+  createAnonymousEncryptedData(name, plain, callback) {
+    if (!validateKeyName(name)) {
+      return callback(new Error(`Invalid key name '${name}'`))
+    }
+
+    if (!Buffer.isBuffer(plain)) {
+      return callback(new Error('Data is required'))
+    }
+
+    const keyPath = path.join(this.store, name + keyExtension)
+    fs.readFile(keyPath, 'utf8', (err, key) => {
+      if (err) {
+        return callback(new Error(`Key '${name} does not exist. ${err.message}'`))
+      }
+      try {
+        // create a p7 enveloped message
+        const p7 = forge.pkcs7.createEnvelopedData()
+
+        // add a recipient
+        p7.addRecipient(util.certificateForKey(key))
+
+        // set content
+        p7.content = forge.util.createBuffer(plain)
+
+        // encrypt
+        p7.encrypt()
+
+        // convert message to PEM
+        var pem = forge.pkcs7.messageToPem(p7)
+        callback(null, pem)
+      } catch (err) {
+        callback(err)
+      }
+    })
+  } 
+  
+  _getKeyInfo(name, callback) {
+    if (!validateKeyName(name)) {
+      return callback(new Error(`Invalid key name '${name}'`))
+    }
+
+    const keyPath = path.join(this.store, name + keyExtension)
+    fs.readFile(keyPath, 'utf8', (err, pem) => {
+      if (err) {
+        return callback(new Error(`Key '${name} does not exist. ${err.message}'`))
+      }
+      try {
+        const privateKey = forge.pki.decryptRsaPrivateKey(pem, this._())
+        const publicKey = forge.pki.setRsaPublicKey(privateKey.n, privateKey.e)
+        const info = {
+          name: name,
+          publicKey: publicKey
+        }
+        callback(null, info)
+      } catch (e) {
+        callback(e)
+      }
+    })
+  }
+  
   _encrypt (name, plain, callback) {
     if (!validateKeyName(name)) {
       return callback(new Error(`Invalid key name '${name}'`))

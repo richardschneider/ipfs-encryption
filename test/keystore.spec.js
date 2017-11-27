@@ -121,11 +121,25 @@ describe('keystore', () => {
   describe('key lists', () => {
     const ks = new Keystore({ store: store, passPhrase: passPhrase})
 
-    it('contains existing keys', (done) => {
+    it('contain existing keys', (done) => {
       ks.listKeys((err, keys) => {
         expect(err).to.not.exist()
         expect(keys).to.exist()
-        expect(keys).to.deep.include({ KeyName: rsaKeyName })
+        console.log(keys)
+        const mykey = keys.find((k) => k.name === rsaKeyName)
+        expect(mykey).to.exist()
+        done()
+      })
+    })
+    
+    it('contain the key\`s name and public key', (done) => {
+      ks.listKeys((err, keys) => {
+        expect(err).to.not.exist()
+        expect(keys).to.exist()
+        keys.forEach((key) => {
+          expect(key).to.have.property('name')
+          expect(key).to.have.property('publicKey')
+        })
         done()
       })
     })
@@ -172,6 +186,22 @@ describe('keystore', () => {
 
   })
   
+  describe('encrypted data', () => {
+    const ks = new Keystore({ store: store, passPhrase: passPhrase})
+    const plainData = Buffer.from('This a message from Alice to Bob')
+    
+    it('is a PKCS #7 message', (done) => {
+      ks.createAnonymousEncryptedData(rsaKeyName, plainData, (err, msg) => {
+        expect(err).to.not.exist()
+        expect(msg).to.exist()
+        console.log(msg)
+        fs.writeFileSync('foo.p7', msg)
+        done()
+      })
+    })
+    
+  })
+
   describe('key removal', () => {
     const ks = new Keystore({ store: store, passPhrase: passPhrase})
 
@@ -196,4 +226,5 @@ describe('keystore', () => {
       })
     })
 })
+
 })
