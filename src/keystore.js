@@ -150,7 +150,8 @@ class Keystore {
         const p7 = forge.pkcs7.createEnvelopedData()
 
         // add a recipient
-        p7.addRecipient(util.certificateForKey(key))
+        const privateKey = forge.pki.decryptRsaPrivateKey(key, this._())
+        p7.addRecipient(util.certificateForKey(privateKey))
 
         // set content
         p7.content = forge.util.createBuffer(plain)
