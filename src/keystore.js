@@ -180,10 +180,9 @@ class Keystore {
       }
       try {
         const privateKey = forge.pki.decryptRsaPrivateKey(pem, this._())
-        const publicKey = forge.pki.setRsaPublicKey(privateKey.n, privateKey.e)
         const info = {
           name: name,
-          publicKey: publicKey
+          id: util.keyId(privateKey)
         }
         callback(null, info)
       } catch (e) {

@@ -2,10 +2,20 @@
 
 const forge = require('node-forge')
 const pki = forge.pki
+const crypto = require('crypto');
+const fs = require('fs');
 
 exports = module.exports
 
-
+// This should be a multi-hash
+exports.keyId = (privateKey) => {
+  const publicKey = pki.setRsaPublicKey(privateKey.n, privateKey.e)
+  const rsaPublicKey = forge.pki.publicKeyToRSAPublicKey(publicKey)
+  const der = new Buffer(forge.asn1.toDer(rsaPublicKey).getBytes(), 'binary')
+  const hash = crypto.createHash('sha256');
+  hash.update(der)
+  return hash.digest('base64')
+}
 
 exports.certificateForKey = (privateKey) => {
   const publicKey = pki.setRsaPublicKey(privateKey.n, privateKey.e)
@@ -23,7 +33,7 @@ exports.certificateForKey = (privateKey) => {
     value: 'keystore'
   }, {
     name: 'commonName',
-    value: 'todo multihash of key'
+    value: exports.keyId(privateKey)
   }];
   cert.setSubject(attrs);
   cert.setIssuer(attrs);

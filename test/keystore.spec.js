@@ -132,13 +132,13 @@ describe('keystore', () => {
       })
     })
     
-    it('contain the key\`s name and public key', (done) => {
+    it('contain the key\`s name and id', (done) => {
       ks.listKeys((err, keys) => {
         expect(err).to.not.exist()
         expect(keys).to.exist()
         keys.forEach((key) => {
           expect(key).to.have.property('name')
-          expect(key).to.have.property('publicKey')
+          expect(key).to.have.property('id')
         })
         done()
       })
@@ -194,7 +194,6 @@ describe('keystore', () => {
       ks.createAnonymousEncryptedData(rsaKeyName, plainData, (err, msg) => {
         expect(err).to.not.exist()
         expect(msg).to.exist()
-        console.log(msg)
         fs.writeFileSync('foo.p7', msg)
         done()
       })
