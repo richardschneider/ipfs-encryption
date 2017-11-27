@@ -77,7 +77,7 @@ class Keystore {
     this._ = () => dek
     
     // JS magick
-    this._getKeyInfo = this._getKeyInfo.bind(this)
+    this._getKeyInfo = this.findKeyByName = this._getKeyInfo.bind(this)
   }
 
   createKey (name, type, size, callback) {
@@ -95,10 +95,14 @@ class Keystore {
           return callback(new Error(`Invalid RSA key size ${size}`))
         }
         forge.pki.rsa.generateKeyPair({bits: size, workers: -1}, (err, keypair) => {
-          if (err) return callback(err);
+          if (err) return callback(err)
 
           const pem = forge.pki.encryptRsaPrivateKey(keypair.privateKey, this._());
-          return fs.writeFile(keyPath, pem, callback)
+          return fs.writeFile(keyPath, pem, (err) => {
+            if (err) return callback(err)
+
+            this._getKeyInfo(name, callback)
+          })
         })
         break;
 
@@ -115,6 +119,16 @@ class Keystore {
         .filter((f) => f.endsWith(keyExtension))
         .map((f) => f.slice(0, -keyExtension.length))
       async.map(names, this._getKeyInfo, callback)
+    })
+  }
+
+  // TODO: not very efficent.
+  findKeyById(id, callback) {
+    this.listKeys((err, keys) => {
+      if (err) return callback(err)
+
+      const key = keys.find((k) => k.id === id)
+      callback(null, key)
     })
   }
 

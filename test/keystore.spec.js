@@ -16,6 +16,7 @@ describe('keystore', () => {
   const store = path.join(os.tmpdir(), 'test-keystore')
   const passPhrase = 'this is not a secure phrase'
   const rsaKeyName = 'rsa-key'
+  let rsaKeyInfo
 
   after((done) => {
     rimraf(store, done)
@@ -67,18 +68,25 @@ describe('keystore', () => {
     })    
   })
 
-  describe('key creation', () => {
+  describe('key', () => {
     const ks = new Keystore({ store: store, passPhrase: passPhrase})
 
-    it('can create RSA key', function (done) {
+    it('can be an RSA key', function (done) {
       this.timeout(20 * 1000)
-      ks.createKey(rsaKeyName, 'rsa', 2048, (err) => {
+      ks.createKey(rsaKeyName, 'rsa', 2048, (err, info) => {
         expect(err).to.not.exist()
+        expect(info).exist()
+        rsaKeyInfo = info
         done()
       })
     })
 
-    it('creates a PKCS #8 pem file in the store', () => {
+    it('has a name and id', () => {
+      expect(rsaKeyInfo).to.have.property('name', rsaKeyName)
+      expect(rsaKeyInfo).to.have.property('id')
+    })
+
+    it('is a PKCS #8 pem file in the store', () => {
       const pem = path.join(store, rsaKeyName + '.pem')
       expect(fs.existsSync(pem)).to.be.true()
       expect(fs.lstatSync(pem).isFile()).to.be.true()
@@ -86,7 +94,7 @@ describe('keystore', () => {
       expect(contents).to.startsWith('-----BEGIN')
     })
 
-    it('creates a PKCS #8 encrypted pem file in the store', () => {
+    it('is a PKCS #8 encrypted pem file in the store', () => {
       const pem = path.join(store, rsaKeyName + '.pem')
       const contents = fs.readFileSync(pem, 'utf8')
       expect(contents).to.startsWith('-----BEGIN ENCRYPTED PRIVATE KEY-----')
@@ -118,21 +126,38 @@ describe('keystore', () => {
 
   })
 
-  describe('key lists', () => {
+  describe('query', () => {
     const ks = new Keystore({ store: store, passPhrase: passPhrase})
 
-    it('contain existing keys', (done) => {
+    it('finds all existing keys', (done) => {
       ks.listKeys((err, keys) => {
         expect(err).to.not.exist()
         expect(keys).to.exist()
-        console.log(keys)
         const mykey = keys.find((k) => k.name === rsaKeyName)
         expect(mykey).to.exist()
         done()
       })
     })
     
-    it('contain the key\`s name and id', (done) => {
+    it('finds a key by name', (done) => {
+      ks.findKeyByName(rsaKeyName, (err, key) => {
+        expect(err).to.not.exist()
+        expect(key).to.exist()
+        expect(key).to.deep.equal(rsaKeyInfo)
+        done()
+      })
+    })
+
+    it('finds a key by id', (done) => {
+      ks.findKeyById(rsaKeyInfo.id, (err, key) => {
+        expect(err).to.not.exist()
+        expect(key).to.exist()
+        expect(key).to.deep.equal(rsaKeyInfo)
+        done()
+      })
+    })
+
+    it('returns the key\'s name and id', (done) => {
       ks.listKeys((err, keys) => {
         expect(err).to.not.exist()
         expect(keys).to.exist()
