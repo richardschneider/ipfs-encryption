@@ -269,6 +269,29 @@ describe('keystore', () => {
 
   })
 
+  describe('exported key', () => {
+    const ks = new Keystore({ store: store, passPhrase: passPhrase})
+    let pemKey
+
+    it('is a PKCS #8 encrypted pem', (done) => {
+      ks.exportKey(rsaKeyName, 'password', (err, pem) => {
+        expect(err).to.not.exist()
+        expect(pem).to.startsWith('-----BEGIN ENCRYPTED PRIVATE KEY-----')
+        pemKey = pem
+        done()
+      })
+    })
+
+    it('can be imported', (done) => {
+      ks.importKey('imported-key', pemKey, 'password', (err, key) => {
+        expect(err).to.not.exist()
+        expect(key.name).to.equal('imported-key')
+        expect(key.id).to.equal(rsaKeyInfo.id)
+        done()
+      })
+    })
+  })
+
   describe('key removal', () => {
     const ks = new Keystore({ store: store, passPhrase: passPhrase})
 

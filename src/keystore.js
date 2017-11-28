@@ -12,6 +12,13 @@ const util = require('./util')
 
 const keyExtension = '.pem'
 
+// NIST SP 800-132
+const NIST = {
+  minKeyLength: 112 / 8,
+  minSaltLength: 128 / 8,
+  minIterationCount: 1000
+}
+
 const defaultOptions = {
   createIfNeeded: true,
 
@@ -50,21 +57,19 @@ class Keystore {
     this.store = opts.store
 
     // Enfore NIST SP 800-132
-    const minKeyLength = 112 / 8
-    const minSaltLength = 128 / 8
-    const minIterationCount = 1000
     if (!opts.passPhrase || opts.passPhrase.length < 20) {
       throw new Error('passPhrase must be least 20 characters')
     }
-    if (opts.dek.keyLength < minKeyLength) {
-      throw new Error(`dek.keyLength must be least ${minKeyLength} bytes`)
+    if (opts.dek.keyLength < NIST.minKeyLength) {
+      throw new Error(`dek.keyLength must be least ${NIST.minKeyLength} bytes`)
     }
-    if (opts.dek.salt.length < minSaltLength) {
-      throw new Error(`dek.saltLength must be least ${minSaltLength} bytes`)
+    if (opts.dek.salt.length < NIST.minSaltLength) {
+      throw new Error(`dek.saltLength must be least ${NIST.minSaltLength} bytes`)
     }
-    if (opts.dek.iterationCount < minIterationCount) {
-      throw new Error(`dek.iterationCount must be least ${minIterationCount}`)
+    if (opts.dek.iterationCount < NIST.minIterationCount) {
+      throw new Error(`dek.iterationCount must be least ${NIST.minIterationCount}`)
     }
+    this.dek = opts.dek
 
     // Create the derived encrypting key
     let dek = forge.pkcs5.pbkdf2(
@@ -111,7 +116,7 @@ class Keystore {
     }
   }
 
-  listKeys(callback) {
+  listKeys (callback) {
     fs.readdir(this.store, (err, filenames ) => {
       if (err) return callback(err)
 
@@ -123,7 +128,7 @@ class Keystore {
   }
 
   // TODO: not very efficent.
-  findKeyById(id, callback) {
+  findKeyById (id, callback) {
     this.listKeys((err, keys) => {
       if (err) return callback(err)
 
@@ -224,6 +229,36 @@ class Keystore {
         })
       }
     )
+  }
+
+  exportKey (name, password, callback) {
+    if (!validateKeyName(name)) {
+      return callback(new Error(`Invalid key name '${name}'`))
+    }
+    if (!password) {
+      return callback(new Error('Password is required'))
+    }
+
+    const keyPath = path.join(this.store, name + keyExtension)
+    fs.readFile(keyPath, 'utf8', (err, pem) => {
+      if (err) {
+        return callback(new Error(`Key '${name} does not exist. ${err.message}'`))
+      }
+      try {
+        const options = {
+          algorithm: 'aes256',
+          count: this.dek.iterationCount,
+          saltSize: NIST.minSaltLength,
+          prfAlgorithm: 'sha512'
+        }
+        const privateKey = forge.pki.decryptRsaPrivateKey(pem, this._())
+        const res = forge.pki.encryptRsaPrivateKey(privateKey, password, options)
+        console.log(res)
+        return callback(null, res)
+      } catch (e) {
+        callback(e)
+      }
+    })
   }
 
   _getKeyInfo(name, callback) {
