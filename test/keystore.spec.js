@@ -238,28 +238,28 @@ describe('keystore', () => {
     })
 
     it('is a PKCS #7 message', (done) => {
-      ks.readEncryptedData("not CMS", (err) => {
+      ks.readCmsData("not CMS", (err) => {
         expect(err).to.exist()
         done()
       })
     })
 
     it('is a PKCS #7 binary message', (done) => {
-      ks.readEncryptedData(plainData, (err) => {
+      ks.readCmsData(plainData, (err) => {
         expect(err).to.exist()
         done()
       })
     })
 
     it('cannot be read without the key', (done) => {
-      emptyKeystore.readEncryptedData(cms, (err, plain) => {
+      emptyKeystore.readCmsData(cms, (err, plain) => {
         expect(err).to.exist()
         done()
       })
     })
 
     it('can be read with the key', (done) => {
-      ks.readEncryptedData(cms, (err, plain) => {
+      ks.readCmsData(cms, (err, plain) => {
         expect(err).to.not.exist()
         expect(plain).to.exist()
         expect(plain.toString()).to.equal(plainData.toString())
