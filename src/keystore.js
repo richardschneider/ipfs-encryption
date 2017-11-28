@@ -253,12 +253,38 @@ class Keystore {
         }
         const privateKey = forge.pki.decryptRsaPrivateKey(pem, this._())
         const res = forge.pki.encryptRsaPrivateKey(privateKey, password, options)
-        console.log(res)
         return callback(null, res)
       } catch (e) {
         callback(e)
       }
     })
+  }
+
+  importKey(name, pem, password, callback) {
+    if (!validateKeyName(name) || name === 'self') {
+      return callback(new Error(`Invalid key name '${name}'`))
+    }
+    if (!pem) {
+      return callback(new Error('PEM encoded key is required'))
+    }
+    const keyPath = path.join(this.store, name + keyExtension)
+    if(fs.existsSync(keyPath))
+      return callback(new Error(`Key '${name} already exists'`))
+
+    try {
+      const privateKey = forge.pki.decryptRsaPrivateKey(pem, password)
+      if (privateKey === null) {
+        return callback(new Error('Cannot read the key, most likely the password is wrong'))
+      }
+      const newpem = forge.pki.encryptRsaPrivateKey(privateKey, this._());
+      return fs.writeFile(keyPath, newpem, (err) => {
+        if (err) return callback(err)
+
+        this._getKeyInfo(name, callback)
+      })
+    } catch (err) {
+      callback(err)
+    }
   }
 
   _getKeyInfo(name, callback) {

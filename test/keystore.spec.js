@@ -290,7 +290,21 @@ describe('keystore', () => {
         done()
       })
     })
-  })
+
+    it('cannot be imported as an existing key name', (done) => {
+      ks.importKey(rsaKeyName, pemKey, 'password', (err, key) => {
+        expect(err).to.exist()
+        done()
+      })
+    })
+
+    it('cannot be imported with the wrong password', (done) => {
+      ks.importKey('a-new-name-for-import', pemKey, 'not the password', (err, key) => {
+        expect(err).to.exist()
+        done()
+      })
+    })
+})
 
   describe('key removal', () => {
     const ks = new Keystore({ store: store, passPhrase: passPhrase})
