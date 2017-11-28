@@ -11,15 +11,25 @@ const os = require('os')
 const path = require('path')
 const fs = require('fs')
 const rimraf = require('rimraf')
+const async = require('async')
 
 describe('keystore', () => {
   const store = path.join(os.tmpdir(), 'test-keystore')
+  const emptyStore = path.join(os.tmpdir(), 'test-keystore-empty')
   const passPhrase = 'this is not a secure phrase'
   const rsaKeyName = 'rsa-key'
   let rsaKeyInfo
+  let emptyKeystore
+
+  before(() => {
+    emptyKeystore = new Keystore({ store: emptyStore, passPhrase: passPhrase})
+  })
 
   after((done) => {
-    rimraf(store, done)
+    async.series([
+      (cb) => rimraf(store, cb),
+      (cb) => rimraf(emptyStore, cb)
+    ], done)
   })
 
   it('needs a pass phrase to encrypt a key', () => {
@@ -213,17 +223,50 @@ describe('keystore', () => {
   
   describe('encrypted data', () => {
     const ks = new Keystore({ store: store, passPhrase: passPhrase})
-    const plainData = Buffer.from('This a message from Alice to Bob')
-    
-    it('is a PKCS #7 message', (done) => {
+    const plainData = Buffer.from('This is a message from Alice to Bob')
+    let cms
+
+    it('is anonymous', (done) => {
       ks.createAnonymousEncryptedData(rsaKeyName, plainData, (err, msg) => {
         expect(err).to.not.exist()
         expect(msg).to.exist()
+        expect(msg).to.be.instanceOf(Buffer)
         fs.writeFileSync('foo.p7', msg)
+        cms = msg
         done()
       })
     })
-    
+
+    it('is a PKCS #7 message', (done) => {
+      ks.readEncryptedData("not CMS", (err) => {
+        expect(err).to.exist()
+        done()
+      })
+    })
+
+    it('is a PKCS #7 binary message', (done) => {
+      ks.readEncryptedData(plainData, (err) => {
+        expect(err).to.exist()
+        done()
+      })
+    })
+
+    it('cannot be read without the key', (done) => {
+      emptyKeystore.readEncryptedData(cms, (err, plain) => {
+        expect(err).to.exist()
+        done()
+      })
+    })
+
+    it('can be read with the key', (done) => {
+      ks.readEncryptedData(cms, (err, plain) => {
+        expect(err).to.not.exist()
+        expect(plain).to.exist()
+        expect(plain.toString()).to.equal(plainData.toString())
+        done()
+      })
+    })
+
   })
 
   describe('key removal', () => {
