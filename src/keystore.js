@@ -19,7 +19,7 @@ const defaultOptions = {
   dek: {
     keyLength: 512 / 8,
     iterationCount: 10000,
-    salt: 'you should override this value with a crypo secure random number',
+    salt: 'you should override this value with a crypto secure random number',
     hash: 'sha512'
   }
 }
@@ -176,7 +176,7 @@ class Keystore {
     })
   } 
   
-  readEncryptedData (cmsData, callback) {
+  readCmsData (cmsData, callback) {
     if (!Buffer.isBuffer(cmsData)) {
       return callback(new Error('CMS data is required'))
     }
