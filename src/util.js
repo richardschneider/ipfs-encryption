@@ -2,19 +2,31 @@
 
 const forge = require('node-forge')
 const pki = forge.pki
-const crypto = require('crypto');
 const fs = require('fs');
+const multihash = require('multihashes')
+const rsaUtils = require('libp2p-crypto/src/keys/rsa-utils')
+const rsaClass = require('libp2p-crypto/src/keys/rsa-class')
 
 exports = module.exports
 
-// This should be a multi-hash
+// Create an IPFS key id; the SHA-256 multihash of a public key.
+// See https://github.com/richardschneider/ipfs-encryption/issues/16
 exports.keyId = (privateKey, callback) => {
-  const publicKey = pki.setRsaPublicKey(privateKey.n, privateKey.e)
-  const rsaPublicKey = forge.pki.publicKeyToRSAPublicKey(publicKey)
-  const der = new Buffer(forge.asn1.toDer(rsaPublicKey).getBytes(), 'binary')
-  const hash = crypto.createHash('sha256');
-  hash.update(der)
-  return callback(null, hash.digest('base64'))
+  try {
+    const publicKey = pki.setRsaPublicKey(privateKey.n, privateKey.e)
+    const spki = pki.publicKeyToSubjectPublicKeyInfo(publicKey)
+    const der = new Buffer(forge.asn1.toDer(spki).getBytes(), 'binary')
+    const jwk = rsaUtils.pkixToJwk(der)
+    const rsa = new rsaClass.RsaPublicKey(jwk)
+    rsa.hash((err, kid) => {
+      if (err) return callback(err)
+
+      const kids = multihash.toB58String(kid)
+      return callback(null, kids)
+    })
+  } catch (err) {
+    callback(err)
+  }
 }
 
 exports.certificateForKey = (privateKey, callback) => {

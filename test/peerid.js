@@ -50,8 +50,30 @@ describe('peer ID', () => {
     })
   })
 
-  it('encoded', (done) => {
+  it('encoded with DER', (done) => {
     const jwk = rsaUtils.pkixToJwk(publicKeyDer)
+    // console.log('jwk', jwk)
+    const rsa = new rsaClass.RsaPublicKey(jwk)
+    // console.log('rsa', rsa)
+    rsa.hash((err, keyId) => {
+      // console.log('err', err)
+      // console.log('keyId', keyId)
+      // console.log('id decoded', multihash.decode(keyId))
+      const kids = multihash.toB58String(keyId)
+      // console.log('id', kids)
+      expect(kids).to.equal(peer.toB58String())
+      done()
+    })
+  })
+
+  it('encoded with JWT', (done) => {
+    const jwk = {
+      kty: 'RSA',
+      n: 'tkiqPxzBWXgZpdQBd14o868a30F3Sc43jwWQG3caikdTHOo7kR14o-h12D45QJNNQYRdUty5eC8ItHAB4YIH-Oe7DIOeVFsnhinlL9LnILwqQcJUeXENNtItDIM4z1ji1qta7b0mzXAItmRFZ-vkNhHB6N8FL1kbS3is_g2UmX8NjxAwvgxjyT5e3_IO85eemMpppsx_ZYmSza84P6onaJFL-btaXRq3KS7jzXkzg5NHKigfjlG7io_RkoWBAghI2smyQ5fdu-qGpS_YIQbUnhL9tJLoGrU72MufdMBZSZJL8pfpz8SB9BBGDCivV0VpbvV2J6En26IsHL_DN0pbIw',
+      e: 'AQAB',
+      alg: 'RS256',
+      kid: '2011-04-29'
+    }
     // console.log('jwk', jwk)
     const rsa = new rsaClass.RsaPublicKey(jwk)
     // console.log('rsa', rsa)
