@@ -165,16 +165,20 @@ class Keystore {
         return callback(new Error(`Key '${name} does not exist. ${err.message}'`))
       }
       try {
-        // create a p7 enveloped message
-        const p7 = forge.pkcs7.createEnvelopedData()
         const privateKey = forge.pki.decryptRsaPrivateKey(key, this._())
-        p7.addRecipient(util.certificateForKey(privateKey))
-        p7.content = forge.util.createBuffer(plain)
-        p7.encrypt()
+        util.certificateForKey(privateKey, (err, certificate) => {
+          if (err) return callback(err)
 
-        // convert message to DER
-        const der = forge.asn1.toDer(p7.toAsn1()).getBytes()
-        callback(null, Buffer.from(der, 'binary'))
+          // create a p7 enveloped message
+          const p7 = forge.pkcs7.createEnvelopedData()
+          p7.addRecipient(certificate)
+          p7.content = forge.util.createBuffer(plain)
+          p7.encrypt()
+
+          // convert message to DER
+          const der = forge.asn1.toDer(p7.toAsn1()).getBytes()
+          callback(null, Buffer.from(der, 'binary'))
+        })
       } catch (err) {
         callback(err)
       }
@@ -299,11 +303,15 @@ class Keystore {
       }
       try {
         const privateKey = forge.pki.decryptRsaPrivateKey(pem, this._())
-        const info = {
-          name: name,
-          id: util.keyId(privateKey)
-        }
-        return callback(null, info)
+        util.keyId(privateKey, (err, kid) => {
+          if (err) return callback(err)
+
+          const info = {
+            name: name,
+            id: kid
+          }
+          return callback(null, info)
+        })
       } catch (e) {
         callback(e)
       }
