@@ -26,7 +26,7 @@ Managing a key
 - `createKey (name, type, size, callback)`
 - `removeKey (name, callback)`
 - `exportKey (name, password, callback)`
-- `importKey(name, pem, password, callback)`
+- `importKey (name, pem, password, callback)`
 - `importPeer (name, peer, callback)`
 
 A naming service for a key.  The `id` is a universally unique identifier for the key.  The `name` is local to the keystore.
