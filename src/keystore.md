@@ -8,4 +8,4 @@ A secure key store implemented in JS
 - Uses encrypted PKCS 8 for key storage
 - Uses PKBDF2 for a "stetched" key encryption key
 - Enforces NIST SP 800-131A and NIST SP 800-132
-- Uses PKCS 7: CMS (aka RFC 2315) to encrypt and/or sign plain data
+- Uses PKCS 7: CMS (aka RFC 5652) to provide cryptographically protected messages

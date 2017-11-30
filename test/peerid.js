@@ -29,7 +29,7 @@ describe('peer ID', () => {
     })
   })
 
-  it('decoded', (done) => {
+  it('decoded public key', (done) => {
     // console.log('peer id', peer.toJSON())
     // console.log('id', peer.toB58String())
     // console.log('id decoded', multihash.decode(peer.id))
@@ -50,7 +50,7 @@ describe('peer ID', () => {
     })
   })
 
-  it('encoded with DER', (done) => {
+  it('encoded public key with DER', (done) => {
     const jwk = rsaUtils.pkixToJwk(publicKeyDer)
     // console.log('jwk', jwk)
     const rsa = new rsaClass.RsaPublicKey(jwk)
@@ -66,7 +66,7 @@ describe('peer ID', () => {
     })
   })
 
-  it('encoded with JWT', (done) => {
+  it('encoded public key with JWT', (done) => {
     const jwk = {
       kty: 'RSA',
       n: 'tkiqPxzBWXgZpdQBd14o868a30F3Sc43jwWQG3caikdTHOo7kR14o-h12D45QJNNQYRdUty5eC8ItHAB4YIH-Oe7DIOeVFsnhinlL9LnILwqQcJUeXENNtItDIM4z1ji1qta7b0mzXAItmRFZ-vkNhHB6N8FL1kbS3is_g2UmX8NjxAwvgxjyT5e3_IO85eemMpppsx_ZYmSza84P6onaJFL-btaXRq3KS7jzXkzg5NHKigfjlG7io_RkoWBAghI2smyQ5fdu-qGpS_YIQbUnhL9tJLoGrU72MufdMBZSZJL8pfpz8SB9BBGDCivV0VpbvV2J6En26IsHL_DN0pbIw',
@@ -87,4 +87,19 @@ describe('peer ID', () => {
       done()
     })
   })
+
+  it('decoded private key', (done) => {
+    // console.log('peer id', peer.toJSON())
+    // console.log('id', peer.toB58String())
+    // console.log('id decoded', multihash.decode(peer.id))
+
+    // get protobuf version of the private key
+    const privateKeyProtobuf = peer.marshalPrivKey()
+    crypto.keys.unmarshalPrivateKey(privateKeyProtobuf, (err, key) => {
+      // console.log('private key', key)
+      //console.log('\nprivate key der', key.marshal().toString('base64'))
+      done()
+    })
+  })
+
 })

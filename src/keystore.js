@@ -6,6 +6,7 @@ const sanitize = require("sanitize-filename")
 const forge = require('node-forge')
 const deepmerge = require('deepmerge')
 const crypto = require('crypto')
+const libp2pCrypto = require('libp2p-crypto')
 const path = require('path')
 const fs = require('fs')
 const util = require('./util')
@@ -291,8 +292,58 @@ class Keystore {
     }
   }
 
-  _getKeyInfo(name, callback) {
+  importPeer (name, peer, callback) {
     if (!validateKeyName(name)) {
+      return callback(new Error(`Invalid key name '${name}'`))
+    }
+    if (!peer || !peer.privKey) {
+      return callback(new Error('Peer.privKey \is required'))
+    }
+    const keyPath = path.join(this.store, name + keyExtension)
+    if(fs.existsSync(keyPath))
+      return callback(new Error(`Key '${name} already exists'`))
+
+    const privateKeyProtobuf = peer.marshalPrivKey()
+    libp2pCrypto.keys.unmarshalPrivateKey(privateKeyProtobuf, (err, key) => {
+      try {
+        const der = key.marshal()
+        const buf = forge.util.createBuffer(der.toString('binary'));
+        const obj = forge.asn1.fromDer(buf)
+        const privateKey = forge.pki.privateKeyFromAsn1(obj)
+        if (privateKey === null) {
+          return callback(new Error('Cannot read the peer private key'))
+        }
+        const pem = forge.pki.encryptRsaPrivateKey(privateKey, this._());
+        return fs.writeFile(keyPath, pem, (err) => {
+          if (err) return callback(err)
+
+          this._getKeyInfo(name, callback)
+        })
+      } catch (err) {
+        callback(err)
+      }
+    })
+  }
+
+  _getKeyInfo (name, callback) {
+    if (!validateKeyName(name)) {    try {
+      const der = key.marshal()
+      const buf = forge.util.createBuffer(der.toString('binary'));
+      const obj = forge.asn1.fromDer(buf)
+      const privateKey = pki.privateKeyFromAsn1(obj)
+      if (privateKey === null) {
+        return callback(new Error('Cannot read the peer private key'))
+      }
+      const pem = forge.pki.encryptRsaPrivateKey(privateKey, this._());
+      return fs.writeFile(keyPath, pem, (err) => {
+        if (err) return callback(err)
+
+        this._getKeyInfo(name, callback)
+      })
+    } catch (err) {
+      callback(err)
+    }
+
       return callback(new Error(`Invalid key name '${name}'`))
     }
 
