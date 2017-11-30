@@ -29,13 +29,26 @@ Managing a key
 - `importKey (name, pem, password, callback)`
 - `importPeer (name, peer, callback)`
 
-A naming service for a key.  The `id` is a universally unique identifier for the key.  The `name` is local to the keystore.
+A naming service for a key
 
 - `listKeys (callback)`
 - `findKeyById (id, callback)`
-- `FindKeyByName (name, callback)`
+- `findKeyByName (name, callback)`
 
 Cryptographically protected messages
 
 - `createAnonymousEncryptedData (name, plain, callback)`
 - `readCmsData (cmsData, callback)`
+
+## KeyInfo
+
+The key management and naming service API all return a `KeyInfo` object.  The `id` is a universally unique identifier for the key.  The `name` is local to the keystore.
+
+```
+{
+  name: 'rsa-key',
+  id: 'QmYWYSUZ4PV6MRFYpdtEDJBiGs4UrmE6g8wmAWSePekXVW'
+}
+```
+
+The key id is the SHA-256 [multihash](https://github.com/multiformats/multihash) of its public key. The *public key* is a [protobuf encoding](https://github.com/libp2p/js-libp2p-crypto/blob/master/src/keys/keys.proto.js) containing a type and the [DER encoding](https://en.wikipedia.org/wiki/X.690) of the PKCS [SubjectPublicKeyInfo](https://www.ietf.org/rfc/rfc3279.txt).
