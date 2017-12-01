@@ -93,7 +93,7 @@ class Keystore {
 
     const keyPath = path.join(this.store, name + keyExtension)
     if(fs.existsSync(keyPath))
-      return callback(new Error(`Key '${name} already exists'`))
+      return callback(new Error(`Key '${name}' already exists'`))
 
     switch (type.toLowerCase()) {
       case 'rsa':
@@ -145,9 +145,9 @@ class Keystore {
 
     const keyPath = path.join(this.store, name + keyExtension)
     if(!fs.existsSync(keyPath)) {
-      return callback(new Error(`Key '${name} does not exist'`))
+      return callback(new Error(`Key '${name}' does not exist'`))
     }
-    
+
     fs.unlink(keyPath, callback)
   }
 
@@ -163,7 +163,7 @@ class Keystore {
     const keyPath = path.join(this.store, name + keyExtension)
     fs.readFile(keyPath, 'utf8', (err, key) => {
       if (err) {
-        return callback(new Error(`Key '${name} does not exist. ${err.message}'`))
+        return callback(new Error(`Key '${name}' does not exist. ${err.message}`))
       }
       try {
         const privateKey = forge.pki.decryptRsaPrivateKey(key, this._())
@@ -247,7 +247,7 @@ class Keystore {
     const keyPath = path.join(this.store, name + keyExtension)
     fs.readFile(keyPath, 'utf8', (err, pem) => {
       if (err) {
-        return callback(new Error(`Key '${name} does not exist. ${err.message}'`))
+        return callback(new Error(`Key '${name}' does not exist. ${err.message}`))
       }
       try {
         const options = {
@@ -274,7 +274,7 @@ class Keystore {
     }
     const keyPath = path.join(this.store, name + keyExtension)
     if(fs.existsSync(keyPath))
-      return callback(new Error(`Key '${name} already exists'`))
+      return callback(new Error(`Key '${name}' already exists'`))
 
     try {
       const privateKey = forge.pki.decryptRsaPrivateKey(pem, password)
@@ -301,7 +301,7 @@ class Keystore {
     }
     const keyPath = path.join(this.store, name + keyExtension)
     if(fs.existsSync(keyPath))
-      return callback(new Error(`Key '${name} already exists'`))
+      return callback(new Error(`Key '${name}' already exists'`))
 
     const privateKeyProtobuf = peer.marshalPrivKey()
     libp2pCrypto.keys.unmarshalPrivateKey(privateKeyProtobuf, (err, key) => {
@@ -326,31 +326,14 @@ class Keystore {
   }
 
   _getKeyInfo (name, callback) {
-    if (!validateKeyName(name)) {    try {
-      const der = key.marshal()
-      const buf = forge.util.createBuffer(der.toString('binary'));
-      const obj = forge.asn1.fromDer(buf)
-      const privateKey = pki.privateKeyFromAsn1(obj)
-      if (privateKey === null) {
-        return callback(new Error('Cannot read the peer private key'))
-      }
-      const pem = forge.pki.encryptRsaPrivateKey(privateKey, this._());
-      return fs.writeFile(keyPath, pem, (err) => {
-        if (err) return callback(err)
-
-        this._getKeyInfo(name, callback)
-      })
-    } catch (err) {
-      callback(err)
-    }
-
+    if (!validateKeyName(name)) {
       return callback(new Error(`Invalid key name '${name}'`))
     }
 
     const keyPath = path.join(this.store, name + keyExtension)
     fs.readFile(keyPath, 'utf8', (err, pem) => {
       if (err) {
-        return callback(new Error(`Key '${name} does not exist. ${err.message}'`))
+        return callback(new Error(`Key '${name}' does not exist. ${err.message}`))
       }
       try {
         const privateKey = forge.pki.decryptRsaPrivateKey(pem, this._())
@@ -382,7 +365,7 @@ class Keystore {
     const keyPath = path.join(this.store, name + keyExtension)
     fs.readFile(keyPath, 'utf8', (err, key) => {
       if (err) {
-        return callback(new Error(`Key '${name} does not exist. ${err.message}'`))
+        return callback(new Error(`Key '${name}' does not exist. ${err.message}`))
       }
       try {
         const privateKey = {
@@ -413,7 +396,7 @@ class Keystore {
     const keyPath = path.join(this.store, name + keyExtension)
     fs.readFile(keyPath, 'utf8', (err, key) => {
       if (err) {
-        return callback(new Error(`Key '${name} does not exist. ${err.message}'`))
+        return callback(new Error(`Key '${name}' does not exist. ${err.message}`))
       }
       try {
         const privateKey = {
