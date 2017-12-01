@@ -19,6 +19,14 @@ A secure key store implemented in JS
     }
     const keystore = new Keystore(opts)
 
+OR
+
+    const opts = {
+      createIfNeeded: true,
+      passPhrase: 'some long easily remembered phrase'
+    }
+    const keystore = new Keystore('./keystore', opts)
+
 # API
 
 Managing a key

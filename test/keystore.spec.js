@@ -48,7 +48,7 @@ describe('keystore', () => {
 
   describe('store', () => {
     it('is a folder', () => {
-      const ks = new Keystore({ store: store, passPhrase: passPhrase})
+      const ks = new Keystore(store, {passPhrase: passPhrase})
       expect(fs.existsSync(store)).to.be.true()
       expect(fs.lstatSync(store).isDirectory()).to.be.true()
     })    

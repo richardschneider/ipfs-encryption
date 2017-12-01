@@ -40,9 +40,15 @@ function validateKeyName (name) {
 }
 
 class Keystore {
-  constructor (options) {
-    const opts = deepmerge(defaultOptions, options)
-    
+  constructor (store, options) {
+    let opts
+    if (arguments.length === 2) {
+      opts = deepmerge(defaultOptions, options)
+      opts.store = store
+    } else {
+      opts = deepmerge(defaultOptions, store)
+    }
+
     // Get the keystore folder.
     if (!opts.store || opts.store.trim().length === 0) {
       throw new Error('store is required')
@@ -58,7 +64,7 @@ class Keystore {
     }
     this.store = opts.store
 
-    // Enfore NIST SP 800-132
+    // Enforce NIST SP 800-132
     if (!opts.passPhrase || opts.passPhrase.length < 20) {
       throw new Error('passPhrase must be least 20 characters')
     }
