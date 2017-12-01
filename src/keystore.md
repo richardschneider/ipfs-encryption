@@ -48,6 +48,7 @@ The key management and naming service API all return a `KeyInfo` object.  The `i
 {
   name: 'rsa-key',
   id: 'QmYWYSUZ4PV6MRFYpdtEDJBiGs4UrmE6g8wmAWSePekXVW'
+  path: '... /rsa-key.pem'
 }
 ```
 

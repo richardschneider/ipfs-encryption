@@ -359,7 +359,8 @@ class Keystore {
 
           const info = {
             name: name,
-            id: kid
+            id: kid,
+            path: keyPath
           }
           return callback(null, info)
         })

@@ -92,13 +92,14 @@ describe('keystore', () => {
       })
     })
 
-    it('has a name and id', () => {
+    it('has a name, id and path', () => {
       expect(rsaKeyInfo).to.have.property('name', rsaKeyName)
       expect(rsaKeyInfo).to.have.property('id')
+      expect(rsaKeyInfo).to.have.property('path')
     })
 
     it('is a PKCS #8 pem file in the store', () => {
-      const pem = path.join(store, rsaKeyName + '.pem')
+      const pem = rsaKeyInfo.path
       expect(fs.existsSync(pem)).to.be.true()
       expect(fs.lstatSync(pem).isFile()).to.be.true()
       const contents = fs.readFileSync(pem, 'utf8')
@@ -106,7 +107,7 @@ describe('keystore', () => {
     })
 
     it('is a PKCS #8 encrypted pem file in the store', () => {
-      const pem = path.join(store, rsaKeyName + '.pem')
+      const pem = rsaKeyInfo.path
       const contents = fs.readFileSync(pem, 'utf8')
       expect(contents).to.startsWith('-----BEGIN ENCRYPTED PRIVATE KEY-----')
     })
