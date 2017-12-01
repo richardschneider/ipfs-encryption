@@ -223,45 +223,50 @@ describe('keystore', () => {
 
   })
   
-  describe('encrypted data', () => {
+  describe('protected data', () => {
     const ks = new Keystore({ store: store, passPhrase: passPhrase})
     const plainData = Buffer.from('This is a message from Alice to Bob')
     let cms
 
+    it('service is available', (done) => {
+      expect(ks).to.have.property('cms')
+      done()
+    })
+
     it('is anonymous', (done) => {
-      ks.createAnonymousEncryptedData(rsaKeyName, plainData, (err, msg) => {
+      ks.cms.createAnonymousEncryptedData(rsaKeyName, plainData, (err, msg) => {
         expect(err).to.not.exist()
         expect(msg).to.exist()
         expect(msg).to.be.instanceOf(Buffer)
-        fs.writeFileSync('foo.p7', msg)
+        // fs.writeFileSync('foo.p7', msg)
         cms = msg
         done()
       })
     })
 
     it('is a PKCS #7 message', (done) => {
-      ks.readCmsData("not CMS", (err) => {
+      ks.cms.readData("not CMS", (err) => {
         expect(err).to.exist()
         done()
       })
     })
 
     it('is a PKCS #7 binary message', (done) => {
-      ks.readCmsData(plainData, (err) => {
+      ks.cms.readData(plainData, (err) => {
         expect(err).to.exist()
         done()
       })
     })
 
     it('cannot be read without the key', (done) => {
-      emptyKeystore.readCmsData(cms, (err, plain) => {
+      emptyKeystore.cms.readData(cms, (err, plain) => {
         expect(err).to.exist()
         done()
       })
     })
 
     it('can be read with the key', (done) => {
-      ks.readCmsData(cms, (err, plain) => {
+      ks.cms.readData(cms, (err, plain) => {
         expect(err).to.not.exist()
         expect(plain).to.exist()
         expect(plain.toString()).to.equal(plainData.toString())

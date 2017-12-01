@@ -37,8 +37,8 @@ A naming service for a key
 
 Cryptographically protected messages
 
-- `createAnonymousEncryptedData (name, plain, callback)`
-- `readCmsData (cmsData, callback)`
+- `cms.createAnonymousEncryptedData (name, plain, callback)`
+- `cms.readData (cmsData, callback)`
 
 ## KeyInfo
 
