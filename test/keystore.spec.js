@@ -19,6 +19,7 @@ describe('keystore', () => {
   const emptyStore = path.join(os.tmpdir(), 'test-keystore-empty')
   const passPhrase = 'this is not a secure phrase'
   const rsaKeyName = 'rsa-key'
+  const renamedRsaKeyName = 'renamed'
   let rsaKeyInfo
   let emptyKeystore
 
@@ -222,8 +223,8 @@ describe('keystore', () => {
     })
 
   })
-  
-  describe('protected data', () => {
+
+  describe('CMS protected data', () => {
     const ks = new Keystore({ store: store, passPhrase: passPhrase})
     const plainData = Buffer.from('This is a message from Alice to Bob')
     let cms
@@ -336,6 +337,70 @@ describe('keystore', () => {
     })
   })
 
+  describe('rename', () => {
+    const ks = new Keystore({ store: store, passPhrase: passPhrase})
+
+    it('requires an existing key name', (done) => {
+      ks.renameKey('not-there', renamedRsaKeyName, (err) => {
+        expect(err).to.exist()
+        done()
+      })
+    })
+
+    it('requires a valid new key name', (done) => {
+      ks.renameKey(rsaKeyName, '..\not-valid', (err) => {
+        expect(err).to.exist()
+        done()
+      })
+    })
+
+    it('does not overwrite existing key', (done) => {
+      ks.renameKey(rsaKeyName, rsaKeyName, (err) => {
+        expect(err).to.exist()
+        done()
+      })
+    })
+
+    it('cannot create the "self" key', (done) => {
+      ks.renameKey(rsaKeyName, 'self', (err) => {
+        expect(err).to.exist()
+        done()
+      })
+    })
+
+    it('removes the existing key name', (done) => {
+      ks.renameKey(rsaKeyName, renamedRsaKeyName, (err, key) => {
+        expect(err).to.not.exist()
+        expect(key).to.exist()
+        expect(key).to.have.property('name', renamedRsaKeyName)
+        expect(key).to.have.property('id', rsaKeyInfo.id)
+        ks.findKeyByName(rsaKeyName, (err, key) => {
+          expect(err).to.exist()
+          done()
+        })
+      })
+    })
+
+    it('creates the new key name', (done) => {
+      ks.findKeyByName(renamedRsaKeyName, (err, key) => {
+        expect(err).to.not.exist()
+        expect(key).to.exist()
+        expect(key).to.have.property('name', renamedRsaKeyName)
+        done()
+      })
+    })
+
+    it('does not change the key ID', (done) => {
+      ks.findKeyByName(renamedRsaKeyName, (err, key) => {
+        expect(err).to.not.exist()
+        expect(key).to.exist()
+        expect(key).to.have.property('name', renamedRsaKeyName)
+        expect(key).to.have.property('id', rsaKeyInfo.id)
+        done()
+      })
+    })
+  })
+
   describe('key removal', () => {
     const ks = new Keystore({ store: store, passPhrase: passPhrase})
 
@@ -354,11 +419,11 @@ describe('keystore', () => {
     })
 
     it('can remove a known key', (done) => {
-      ks.removeKey(rsaKeyName, (err) => {
+      ks.removeKey(renamedRsaKeyName, (err) => {
         expect(err).to.not.exist()
         done()
       })
     })
-})
+  })
 
 })

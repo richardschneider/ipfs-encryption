@@ -155,6 +155,29 @@ class Keystore {
     fs.unlink(keyPath, callback)
   }
 
+  renameKey(oldName, newName, callback) {
+    if (!validateKeyName(oldName) || oldName === 'self') {
+      return callback(new Error(`Invalid old key name '${oldName}'`))
+    }
+    if (!validateKeyName(newName) || newName === 'self') {
+      return callback(new Error(`Invalid new key name '${newName}'`))
+    }
+    const oldKeyPath = path.join(this.store, oldName + keyExtension)
+    if(!fs.existsSync(oldKeyPath)) {
+      return callback(new Error(`Key '${oldName}' does not exist'`))
+    }
+    const newKeyPath = path.join(this.store, newName + keyExtension)
+    if(fs.existsSync(newKeyPath)) {
+      return callback(new Error(`Key '${newName}' already exists'`))
+    }
+
+    const self = this
+    fs.rename(oldKeyPath, newKeyPath, (err) => {
+      if (err) return callback(err)
+      self._getKeyInfo(newName, callback)
+    })
+  }
+
   exportKey (name, password, callback) {
     if (!validateKeyName(name)) {
       return callback(new Error(`Invalid key name '${name}'`))

@@ -24,6 +24,7 @@ A secure key store implemented in JS
 Managing a key
 
 - `createKey (name, type, size, callback)`
+- `renameKey (oldName, newName, callback)`
 - `removeKey (name, callback)`
 - `exportKey (name, password, callback)`
 - `importKey (name, pem, password, callback)`
