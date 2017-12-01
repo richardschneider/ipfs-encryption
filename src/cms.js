@@ -86,9 +86,7 @@ class CMS {
 
         async.waterfall([
           (cb) => self.keystore.findKeyById(r.keyId, cb),
-          (key, cb) => {
-            fs.readFile(key.path, 'utf8', cb)
-          }
+          (key, cb) => fs.readFile(key.path, 'utf8', cb)
         ], (err, pem) => {
           if (err) return callback(err);
 
