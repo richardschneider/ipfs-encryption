@@ -19,7 +19,7 @@ describe('keystore', () => {
   const emptyStore = path.join(os.tmpdir(), 'test-keystore-empty')
   const passPhrase = 'this is not a secure phrase'
   const rsaKeyName = 'tajné jméno'
-  const renamedRsaKeyName = 'renamed'
+  const renamedRsaKeyName = 'ชื่อลับ'
   let rsaKeyInfo
   let emptyKeystore
 
