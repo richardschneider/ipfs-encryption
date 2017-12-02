@@ -68,3 +68,18 @@ The key id is the SHA-256 [multihash](https://github.com/multiformats/multihash)
 A private key is stored as an encrypted PKCS 8 structure in the PEM format. It is protected by a key generated from the keystore's *passPhrase* using **PBKDF2**.  Its file extension is `.p8.pem`. 
 
 See [details](https://github.com/richardschneider/ipfs-encryption/issues/10) for an in-depth discussion.
+
+The default options for generating the derived encryption key are in the `dek` object
+```
+const defaultOptions = {
+  createIfNeeded: true,
+
+  //See https://cryptosense.com/parameter-choice-for-pbkdf2/
+  dek: {
+    keyLength: 512 / 8,
+    iterationCount: 10000,
+    salt: 'you should override this value with a crypto secure random number',
+    hash: 'sha512'
+  }
+}
+```
