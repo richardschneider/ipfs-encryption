@@ -12,7 +12,7 @@ const fs = require('fs')
 const util = require('./util')
 const CMS = require('./cms')
 
-const keyExtension = '.pem'
+const keyExtension = '.p8.pem'
 
 // NIST SP 800-132
 const NIST = {

@@ -62,3 +62,9 @@ The key management and naming service API all return a `KeyInfo` object.  The `i
 ```
 
 The key id is the SHA-256 [multihash](https://github.com/multiformats/multihash) of its public key. The *public key* is a [protobuf encoding](https://github.com/libp2p/js-libp2p-crypto/blob/master/src/keys/keys.proto.js) containing a type and the [DER encoding](https://en.wikipedia.org/wiki/X.690) of the PKCS [SubjectPublicKeyInfo](https://www.ietf.org/rfc/rfc3279.txt).
+
+## Private Key Storage
+
+A private key is stored as an encrypted PKCS 8 structure in the PEM format. It is protected by a key generated from the keystore's *passPhrase* using **PBKDF2**.  Its file extension is `.p8.pem`. 
+
+See [details](https://github.com/richardschneider/ipfs-encryption/issues/10) for an in-depth discussion.
