@@ -18,7 +18,7 @@ describe('keystore', () => {
   const store = path.join(os.tmpdir(), 'test-keystore')
   const emptyStore = path.join(os.tmpdir(), 'test-keystore-empty')
   const passPhrase = 'this is not a secure phrase'
-  const rsaKeyName = 'rsa-key'
+  const rsaKeyName = 'tajné jméno'
   const renamedRsaKeyName = 'renamed'
   let rsaKeyInfo
   let emptyKeystore
@@ -55,7 +55,7 @@ describe('keystore', () => {
   })
   
   describe('key name', () => {
-    it('is a valid filename', () => {
+    it('is a valid filename and non-ASCII', () => {
       const ks = new Keystore({ store: store, passPhrase: passPhrase})
       ks.removeKey('../../nasty', (err) => {
         expect(err).to.exist()
