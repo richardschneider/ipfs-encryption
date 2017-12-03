@@ -1,3 +1,3 @@
 'use strict'
 
-exports.KeyChain = require('./keychain')
+exports.Keychain = require('./keychain')

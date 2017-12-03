@@ -6,7 +6,7 @@ const dirtyChai = require('dirty-chai')
 const expect = chai.expect
 chai.use(dirtyChai)
 chai.use(require('chai-string'))
-const KeyChain = require('..').KeyChain
+const Keychain = require('..').Keychain
 const os = require('os')
 const path = require('path')
 const fs = require('fs')
@@ -15,7 +15,7 @@ const async = require('async')
 const PeerId = require('peer-id')
 const FsStore = require('datastore-fs')
 
-describe('key chain', () => {
+describe('keychain', () => {
   const store = path.join(os.tmpdir(), 'test-keystore')
   const emptyStore = path.join(os.tmpdir(), 'test-keystore-empty')
   const datastore = new FsStore(store)
@@ -28,8 +28,8 @@ describe('key chain', () => {
   let ks
 
   before((done) => {
-    emptyKeystore = new KeyChain(emptyDatastore, { passPhrase: passPhrase })
-    ks = new KeyChain(datastore, { passPhrase: passPhrase })
+    emptyKeystore = new Keychain(emptyDatastore, { passPhrase: passPhrase })
+    ks = new Keychain(datastore, { passPhrase: passPhrase })
     async.series([
       (cb) => emptyDatastore.open(cb),
       (cb) => datastore.open(cb)
@@ -46,24 +46,24 @@ describe('key chain', () => {
   })
 
   it('needs a pass phrase to encrypt a key', () => {
-    expect(() => new KeyChain(emptyDatastore)).to.throw()
+    expect(() => new Keychain(emptyDatastore)).to.throw()
   })
 
   it ('needs a NIST SP 800-132 non-weak pass phrase', () => {
-    expect(() => new KeyChain(emptyDatastore, { passPhrase: '< 20 character'})).to.throw()
+    expect(() => new Keychain(emptyDatastore, { passPhrase: '< 20 character'})).to.throw()
   })
 
   it('needs a store to persist a key', () => {
-    expect(() => new KeyChain(null, { passPhrase: passPhrase})).to.throw()
+    expect(() => new Keychain(null, { passPhrase: passPhrase})).to.throw()
   })
 
   it('has default options', () => {
-    expect(KeyChain.options).to.exist()
+    expect(Keychain.options).to.exist()
   })
 
   describe('store', () => {
     it('can be a folder', () => {
-      const ks = new KeyChain(datastore, {passPhrase: passPhrase})
+      const ks = new Keychain(datastore, {passPhrase: passPhrase})
       expect(fs.existsSync(store)).to.be.true()
       expect(fs.lstatSync(store).isDirectory()).to.be.true()
     })    

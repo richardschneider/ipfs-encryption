@@ -16,7 +16,7 @@ A secure key chain implemented in JS
     const opts = {
       passPhrase: 'some long easily remembered phrase'
     }
-    const keychain = new KeyChain(datastore, opts)
+    const keychain = new Keychain(datastore, opts)
 
 # API
 
