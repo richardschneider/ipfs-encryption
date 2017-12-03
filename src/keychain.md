@@ -1,4 +1,4 @@
-A secure key store implemented in JS
+A secure key chain implemented in JS
 
 # Features
 
@@ -12,20 +12,11 @@ A secure key store implemented in JS
 
 # Usage
 
+    const datastore = new FsStore('./a-keystore')
     const opts = {
-      store: './keystore',
-      createIfNeeded: true,
       passPhrase: 'some long easily remembered phrase'
     }
-    const keystore = new Keystore(opts)
-
-OR
-
-    const opts = {
-      createIfNeeded: true,
-      passPhrase: 'some long easily remembered phrase'
-    }
-    const keystore = new Keystore('./keystore', opts)
+    const keychain = new KeyChain(datastore, opts)
 
 # API
 
@@ -51,7 +42,7 @@ Cryptographically protected messages
 
 ## KeyInfo
 
-The key management and naming service API all return a `KeyInfo` object.  The `id` is a universally unique identifier for the key.  The `name` is local to the keystore.
+The key management and naming service API all return a `KeyInfo` object.  The `id` is a universally unique identifier for the key.  The `name` is local to the key chain.
 
 ```
 {
@@ -63,9 +54,9 @@ The key management and naming service API all return a `KeyInfo` object.  The `i
 
 The key id is the SHA-256 [multihash](https://github.com/multiformats/multihash) of its public key. The *public key* is a [protobuf encoding](https://github.com/libp2p/js-libp2p-crypto/blob/master/src/keys/keys.proto.js) containing a type and the [DER encoding](https://en.wikipedia.org/wiki/X.690) of the PKCS [SubjectPublicKeyInfo](https://www.ietf.org/rfc/rfc3279.txt).
 
-## Private Key Storage
+## Private key storage
 
-A private key is stored as an encrypted PKCS 8 structure in the PEM format. It is protected by a key generated from the keystore's *passPhrase* using **PBKDF2**.  Its file extension is `.p8.pem`. 
+A private key is stored as an encrypted PKCS 8 structure in the PEM format. It is protected by a key generated from the key chain's *passPhrase* using **PBKDF2**.  Its file extension is `.p8.pem`. 
 
 See [details](https://github.com/richardschneider/ipfs-encryption/issues/10) for an in-depth discussion.
 
@@ -83,3 +74,6 @@ const defaultOptions = {
   }
 }
 ```
+### Physical storage
+
+The actual physical storage of an encrypted key is left to implementations of [interface-datastore](https://github.com/ipfs/interface-datastore/).  A key benifit is that now the key chain can be used in browser with the [js-datastore-level](https://github.com/ipfs/js-datastore-level) implementation.

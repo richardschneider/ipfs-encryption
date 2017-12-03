@@ -50,7 +50,7 @@ function KsName(name) {
   return name.toString().slice(1)
 }
 
-class Keystore {
+class KeyChain {
   constructor (store, options) {
     if (!store) {
       throw new Error('store is required')
@@ -381,4 +381,4 @@ class Keystore {
 
 }
 
-module.exports = Keystore
+module.exports = KeyChain

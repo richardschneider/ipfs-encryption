@@ -6,7 +6,7 @@ const dirtyChai = require('dirty-chai')
 const expect = chai.expect
 chai.use(dirtyChai)
 chai.use(require('chai-string'))
-const Keystore = require('..').Keystore
+const KeyChain = require('..').KeyChain
 const os = require('os')
 const path = require('path')
 const fs = require('fs')
@@ -15,7 +15,7 @@ const async = require('async')
 const PeerId = require('peer-id')
 const FsStore = require('datastore-fs')
 
-describe('keystore', () => {
+describe('key chain', () => {
   const store = path.join(os.tmpdir(), 'test-keystore')
   const emptyStore = path.join(os.tmpdir(), 'test-keystore-empty')
   const datastore = new FsStore(store)
@@ -28,8 +28,8 @@ describe('keystore', () => {
   let ks
 
   before((done) => {
-    emptyKeystore = new Keystore(emptyDatastore, { passPhrase: passPhrase })
-    ks = new Keystore(datastore, { passPhrase: passPhrase })
+    emptyKeystore = new KeyChain(emptyDatastore, { passPhrase: passPhrase })
+    ks = new KeyChain(datastore, { passPhrase: passPhrase })
     async.series([
       (cb) => emptyDatastore.open(cb),
       (cb) => datastore.open(cb)
@@ -58,8 +58,8 @@ describe('keystore', () => {
   })
 
   describe('store', () => {
-    it('is a folder', () => {
-      const ks = new Keystore(datastore, {passPhrase: passPhrase})
+    it('can be a folder', () => {
+      const ks = new KeyChain(datastore, {passPhrase: passPhrase})
       expect(fs.existsSync(store)).to.be.true()
       expect(fs.lstatSync(store).isDirectory()).to.be.true()
     })    
