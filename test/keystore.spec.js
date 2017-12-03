@@ -13,42 +13,53 @@ const fs = require('fs')
 const rimraf = require('rimraf')
 const async = require('async')
 const PeerId = require('peer-id')
+const FsStore = require('datastore-fs')
 
 describe('keystore', () => {
   const store = path.join(os.tmpdir(), 'test-keystore')
   const emptyStore = path.join(os.tmpdir(), 'test-keystore-empty')
+  const datastore = new FsStore(store)
+  const emptyDatastore = new FsStore(emptyStore)
   const passPhrase = 'this is not a secure phrase'
   const rsaKeyName = 'tajné jméno'
   const renamedRsaKeyName = 'ชื่อลับ'
   let rsaKeyInfo
   let emptyKeystore
+  let ks
 
-  before(() => {
-    emptyKeystore = new Keystore({ store: emptyStore, passPhrase: passPhrase})
+  before((done) => {
+    emptyKeystore = new Keystore(emptyDatastore, { passPhrase: passPhrase })
+    ks = new Keystore(datastore, { passPhrase: passPhrase })
+    async.series([
+      (cb) => emptyDatastore.open(cb),
+      (cb) => datastore.open(cb)
+    ], done)
   })
 
   after((done) => {
     async.series([
+      (cb) => emptyDatastore.close(cb),
+      (cb) => datastore.close(cb),
       (cb) => rimraf(store, cb),
       (cb) => rimraf(emptyStore, cb)
     ], done)
   })
 
   it('needs a pass phrase to encrypt a key', () => {
-    expect(() => new Keystore({ store: store})).to.throw()
+    expect(() => new Keystore(emptyDatastore)).to.throw()
   })
 
   it ('needs a NIST SP 800-132 non-weak pass phrase', () => {
-    expect(() => new Keystore({ store: store, passPhrase: '< 20 character'})).to.throw()
+    expect(() => new Keystore(emptyDatastore, { passPhrase: '< 20 character'})).to.throw()
   })
 
   it('needs a store to persist a key', () => {
-    expect(() => new Keystore({ passPhrase: passPhrase})).to.throw()
+    expect(() => new Keystore(null, { passPhrase: passPhrase})).to.throw()
   })
 
   describe('store', () => {
     it('is a folder', () => {
-      const ks = new Keystore(store, {passPhrase: passPhrase})
+      const ks = new Keystore(datastore, {passPhrase: passPhrase})
       expect(fs.existsSync(store)).to.be.true()
       expect(fs.lstatSync(store).isDirectory()).to.be.true()
     })    
@@ -56,7 +67,6 @@ describe('keystore', () => {
   
   describe('key name', () => {
     it('is a valid filename and non-ASCII', () => {
-      const ks = new Keystore({ store: store, passPhrase: passPhrase})
       ks.removeKey('../../nasty', (err) => {
         expect(err).to.exist()
         expect(err).to.have.property('message', 'Invalid key name \'../../nasty\'')
@@ -81,8 +91,6 @@ describe('keystore', () => {
   })
 
   describe('key', () => {
-    const ks = new Keystore({ store: store, passPhrase: passPhrase})
-
     it('can be an RSA key', function (done) {
       this.timeout(20 * 1000)
       ks.createKey(rsaKeyName, 'rsa', 2048, (err, info) => {
@@ -140,8 +148,6 @@ describe('keystore', () => {
   })
 
   describe('query', () => {
-    const ks = new Keystore({ store: store, passPhrase: passPhrase})
-
     it('finds all existing keys', (done) => {
       ks.listKeys((err, keys) => {
         expect(err).to.not.exist()
@@ -184,9 +190,8 @@ describe('keystore', () => {
   })
 
   describe('encryption', () => {
-    const ks = new Keystore({ store: store, passPhrase: passPhrase})
     const plainData = Buffer.from('This a message from Alice to Bob')
-    
+
     it('requires a known key name', (done) => {
       ks._encrypt('not-there', plainData, (err) => {
         expect(err).to.exist()
@@ -225,7 +230,6 @@ describe('keystore', () => {
   })
 
   describe('CMS protected data', () => {
-    const ks = new Keystore({ store: store, passPhrase: passPhrase})
     const plainData = Buffer.from('This is a message from Alice to Bob')
     let cms
 
@@ -278,7 +282,6 @@ describe('keystore', () => {
   })
 
   describe('exported key', () => {
-    const ks = new Keystore({ store: store, passPhrase: passPhrase})
     let pemKey
 
     it('is a PKCS #8 encrypted pem', (done) => {
@@ -315,7 +318,6 @@ describe('keystore', () => {
 })
 
   describe('peer id', () => {
-    const ks = new Keystore({ store: store, passPhrase: passPhrase})
     const alicePrivKey = 'CAASpgkwggSiAgEAAoIBAQC2SKo/HMFZeBml1AF3XijzrxrfQXdJzjePBZAbdxqKR1Mc6juRHXij6HXYPjlAk01BhF1S3Ll4Lwi0cAHhggf457sMg55UWyeGKeUv0ucgvCpBwlR5cQ020i0MgzjPWOLWq1rtvSbNcAi2ZEVn6+Q2EcHo3wUvWRtLeKz+DZSZfw2PEDC+DGPJPl7f8g7zl56YymmmzH9liZLNrzg/qidokUv5u1pdGrcpLuPNeTODk0cqKB+OUbuKj9GShYECCEjaybJDl9276oalL9ghBtSeEv20kugatTvYy590wFlJkkvyl+nPxIH0EEYMKK9XRWlu9XYnoSfboiwcv8M3SlsjAgMBAAECggEAZtju/bcKvKFPz0mkHiaJcpycy9STKphorpCT83srBVQi59CdFU6Mj+aL/xt0kCPMVigJw8P3/YCEJ9J+rS8BsoWE+xWUEsJvtXoT7vzPHaAtM3ci1HZd302Mz1+GgS8Epdx+7F5p80XAFLDUnELzOzKftvWGZmWfSeDnslwVONkL/1VAzwKy7Ce6hk4SxRE7l2NE2OklSHOzCGU1f78ZzVYKSnS5Ag9YrGjOAmTOXDbKNKN/qIorAQ1bovzGoCwx3iGIatQKFOxyVCyO1PsJYT7JO+kZbhBWRRE+L7l+ppPER9bdLFxs1t5CrKc078h+wuUr05S1P1JjXk68pk3+kQKBgQDeK8AR11373Mzib6uzpjGzgNRMzdYNuExWjxyxAzz53NAR7zrPHvXvfIqjDScLJ4NcRO2TddhXAfZoOPVH5k4PJHKLBPKuXZpWlookCAyENY7+Pd55S8r+a+MusrMagYNljb5WbVTgN8cgdpim9lbbIFlpN6SZaVjLQL3J8TWH6wKBgQDSChzItkqWX11CNstJ9zJyUE20I7LrpyBJNgG1gtvz3ZMUQCn3PxxHtQzN9n1P0mSSYs+jBKPuoSyYLt1wwe10/lpgL4rkKWU3/m1Myt0tveJ9WcqHh6tzcAbb/fXpUFT/o4SWDimWkPkuCb+8j//2yiXk0a/T2f36zKMuZvujqQKBgC6B7BAQDG2H2B/ijofp12ejJU36nL98gAZyqOfpLJ+FeMz4TlBDQ+phIMhnHXA5UkdDapQ+zA3SrFk+6yGk9Vw4Hf46B+82SvOrSbmnMa+PYqKYIvUzR4gg34rL/7AhwnbEyD5hXq4dHwMNsIDq+l2elPjwm/U9V0gdAl2+r50HAoGALtsKqMvhv8HucAMBPrLikhXP/8um8mMKFMrzfqZ+otxfHzlhI0L08Bo3jQrb0Z7ByNY6M8epOmbCKADsbWcVre/AAY0ZkuSZK/CaOXNX/AhMKmKJh8qAOPRY02LIJRBCpfS4czEdnfUhYV/TYiFNnKRj57PPYZdTzUsxa/yVTmECgYBr7slQEjb5Onn5mZnGDh+72BxLNdgwBkhO0OCdpdISqk0F0Pxby22DFOKXZEpiyI9XYP1C8wPiJsShGm2yEwBPWXnrrZNWczaVuCbXHrZkWQogBDG3HGXNdU4MAWCyiYlyinIBpPpoAJZSzpGLmWbMWh28+RJS6AQX6KHrK1o2uw=='
     let alice
 
@@ -338,8 +340,6 @@ describe('keystore', () => {
   })
 
   describe('rename', () => {
-    const ks = new Keystore({ store: store, passPhrase: passPhrase})
-
     it('requires an existing key name', (done) => {
       ks.renameKey('not-there', renamedRsaKeyName, (err) => {
         expect(err).to.exist()
@@ -402,8 +402,6 @@ describe('keystore', () => {
   })
 
   describe('key removal', () => {
-    const ks = new Keystore({ store: store, passPhrase: passPhrase})
-
     it('cannot remove the "self" key', (done) => {
       ks.removeKey('self', (err) => {
         expect(err).to.exist()

@@ -1,18 +1,17 @@
 'use strict'
 
 const async = require('async')
-const mkdirp = require('mkdirp')
 const sanitize = require("sanitize-filename")
 const forge = require('node-forge')
 const deepmerge = require('deepmerge')
 const crypto = require('crypto')
 const libp2pCrypto = require('libp2p-crypto')
-const path = require('path')
-const fs = require('fs')
 const util = require('./util')
 const CMS = require('./cms')
+const DS = require('interface-datastore')
+const pull = require('pull-stream')
 
-const keyExtension = '.p8.pem'
+const keyExtension = '.p8'
 
 // NIST SP 800-132
 const NIST = {
@@ -22,9 +21,7 @@ const NIST = {
 }
 
 const defaultOptions = {
-  createIfNeeded: true,
-
-  //See https://cryptosense.com/parameter-choice-for-pbkdf2/
+  // See https://cryptosense.com/parametesr-choice-for-pbkdf2/
   dek: {
     keyLength: 512 / 8,
     iterationCount: 10000,
@@ -39,30 +36,29 @@ function validateKeyName (name) {
   return name === sanitize(name.trim())
 }
 
+/**
+ * Converts a key name into a datastore name.
+ */
+function DsName (name) {
+  return new DS.Key('/' + name)
+}
+
+/**
+ * Converts a datastore name into a key name.
+ */
+function KsName(name) {
+  return name.toString().slice(1)
+}
+
 class Keystore {
   constructor (store, options) {
-    let opts
-    if (arguments.length === 2) {
-      opts = deepmerge(defaultOptions, options)
-      opts.store = store
-    } else {
-      opts = deepmerge(defaultOptions, store)
-    }
-
-    // Get the keystore folder.
-    if (!opts.store || opts.store.trim().length === 0) {
+    if (!store) {
       throw new Error('store is required')
     }
-    opts.store = path.normalize(opts.store)
-    if (!fs.existsSync(opts.store)) {
-      if (opts.createIfNeeded) {
-        mkdirp.sync(opts.store)
-      }
-      else {
-        throw new Error(`The store '${opts.store}' does not exist`)
-      }
-    }
-    this.store = opts.store
+    this.store = store
+    this.store.opts.extension = keyExtension
+
+    const opts = deepmerge(defaultOptions, options)
 
     // Enforce NIST SP 800-132
     if (!opts.passPhrase || opts.passPhrase.length < 20) {
@@ -97,45 +93,52 @@ class Keystore {
   }
 
   createKey (name, type, size, callback) {
+    const self = this
+
     if (!validateKeyName(name) || name === 'self') {
       return callback(new Error(`Invalid key name '${name}'`))
     }
+    const dsname = DsName(name)
+    self.store.has(dsname, (err, exists) => {
+      if (exists) return callback(new Error(`Key '${name}' already exists'`))
 
-    const keyPath = path.join(this.store, name + keyExtension)
-    if(fs.existsSync(keyPath))
-      return callback(new Error(`Key '${name}' already exists'`))
-
-    switch (type.toLowerCase()) {
-      case 'rsa':
-        if (size < 2048) {
-          return callback(new Error(`Invalid RSA key size ${size}`))
-        }
-        forge.pki.rsa.generateKeyPair({bits: size, workers: -1}, (err, keypair) => {
-          if (err) return callback(err)
-
-          const pem = forge.pki.encryptRsaPrivateKey(keypair.privateKey, this._());
-          return fs.writeFile(keyPath, pem, (err) => {
+      switch (type.toLowerCase()) {
+        case 'rsa':
+          if (size < 2048) {
+            return callback(new Error(`Invalid RSA key size ${size}`))
+          }
+          forge.pki.rsa.generateKeyPair({bits: size, workers: -1}, (err, keypair) => {
             if (err) return callback(err)
 
-            this._getKeyInfo(name, callback)
-          })
-        })
-        break;
+            const pem = forge.pki.encryptRsaPrivateKey(keypair.privateKey, this._());
+            return self.store.put(dsname, pem, (err) => {
+              if (err) return callback(err)
 
-      default:
-        return callback(new Error(`Invalid key type '${type}'`))
-    }
+              self._getKeyInfo(name, callback)
+            })
+          })
+          break;
+
+        default:
+          return callback(new Error(`Invalid key type '${type}'`))
+      }
+    })
   }
 
   listKeys (callback) {
-    fs.readdir(this.store, (err, filenames ) => {
-      if (err) return callback(err)
+    const self = this
+    const query = {
+      keysOnly: true
+    }
+    pull(
+      self.store.query(query),
+      pull.collect((err, res) => {
+        if (err) return callback(err)
 
-      const names = filenames
-        .filter((f) => f.endsWith(keyExtension))
-        .map((f) => f.slice(0, -keyExtension.length))
-      async.map(names, this._getKeyInfo, callback)
-    })
+        const names = res.map(r => KsName(r.key))
+        async.map(names, self._getKeyInfo, callback)
+      })
+    )
   }
 
   // TODO: not very efficent.
@@ -149,38 +152,44 @@ class Keystore {
   }
 
   removeKey (name, callback) {
+    const self = this
     if (!validateKeyName(name) || name === 'self') {
       return callback(new Error(`Invalid key name '${name}'`))
     }
+    const dsname = DsName(name)
+    self.store.has(dsname, (err, exists) => {
+      if (!exists) return callback(new Error(`Key '${name}' does not exist'`))
 
-    const keyPath = path.join(this.store, name + keyExtension)
-    if(!fs.existsSync(keyPath)) {
-      return callback(new Error(`Key '${name}' does not exist'`))
-    }
-
-    fs.unlink(keyPath, callback)
+      self.store.delete(dsname, callback)
+    })
   }
 
   renameKey(oldName, newName, callback) {
+    const self = this
     if (!validateKeyName(oldName) || oldName === 'self') {
       return callback(new Error(`Invalid old key name '${oldName}'`))
     }
     if (!validateKeyName(newName) || newName === 'self') {
       return callback(new Error(`Invalid new key name '${newName}'`))
     }
-    const oldKeyPath = path.join(this.store, oldName + keyExtension)
-    if(!fs.existsSync(oldKeyPath)) {
-      return callback(new Error(`Key '${oldName}' does not exist'`))
-    }
-    const newKeyPath = path.join(this.store, newName + keyExtension)
-    if(fs.existsSync(newKeyPath)) {
-      return callback(new Error(`Key '${newName}' already exists'`))
-    }
+    const oldDsname = DsName(oldName)
+    const newDsname = DsName(newName)
+    this.store.get(oldDsname, (err, res) => {
+      if (err) {
+        return callback(new Error(`Key '${oldName}' does not exist. ${err.message}`))
+      }
+      const pem = res.toString()
+      self.store.has(newDsname, (err, exists) => {
+        if (exists) return callback(new Error(`Key '${newName}' already exists'`))
 
-    const self = this
-    fs.rename(oldKeyPath, newKeyPath, (err) => {
-      if (err) return callback(err)
-      self._getKeyInfo(newName, callback)
+        const batch = self.store.batch()
+        batch.put(newDsname, pem)
+        batch.delete(oldDsname)
+        batch.commit((err) => {
+          if (err) return callback(err)
+          self._getKeyInfo(newName, callback)
+        })
+      })
     })
   }
 
@@ -192,11 +201,12 @@ class Keystore {
       return callback(new Error('Password is required'))
     }
 
-    const keyPath = path.join(this.store, name + keyExtension)
-    fs.readFile(keyPath, 'utf8', (err, pem) => {
+    const dsname = DsName(name)
+    this.store.get(dsname, (err, res) => {
       if (err) {
         return callback(new Error(`Key '${name}' does not exist. ${err.message}`))
       }
+      const pem = res.toString()
       try {
         const options = {
           algorithm: 'aes256',
@@ -214,56 +224,24 @@ class Keystore {
   }
 
   importKey(name, pem, password, callback) {
+    const self = this
     if (!validateKeyName(name) || name === 'self') {
       return callback(new Error(`Invalid key name '${name}'`))
     }
     if (!pem) {
       return callback(new Error('PEM encoded key is required'))
     }
-    const keyPath = path.join(this.store, name + keyExtension)
-    if(fs.existsSync(keyPath))
-      return callback(new Error(`Key '${name}' already exists'`))
-
-    try {
-      const privateKey = forge.pki.decryptRsaPrivateKey(pem, password)
-      if (privateKey === null) {
-        return callback(new Error('Cannot read the key, most likely the password is wrong'))
-      }
-      const newpem = forge.pki.encryptRsaPrivateKey(privateKey, this._());
-      return fs.writeFile(keyPath, newpem, (err) => {
-        if (err) return callback(err)
-
-        this._getKeyInfo(name, callback)
-      })
-    } catch (err) {
-      callback(err)
-    }
-  }
-
-  importPeer (name, peer, callback) {
-    if (!validateKeyName(name)) {
-      return callback(new Error(`Invalid key name '${name}'`))
-    }
-    if (!peer || !peer.privKey) {
-      return callback(new Error('Peer.privKey \is required'))
-    }
-    const keyPath = path.join(this.store, name + keyExtension)
-    if(fs.existsSync(keyPath))
-      return callback(new Error(`Key '${name}' already exists'`))
-
-    const privateKeyProtobuf = peer.marshalPrivKey()
-    libp2pCrypto.keys.unmarshalPrivateKey(privateKeyProtobuf, (err, key) => {
+    const dsname = DsName(name)
+    self.store.has(dsname, (err, exists) => {
+      if (exists) return callback(new Error(`Key '${name}' already exists'`))
       try {
-        const der = key.marshal()
-        const buf = forge.util.createBuffer(der.toString('binary'));
-        const obj = forge.asn1.fromDer(buf)
-        const privateKey = forge.pki.privateKeyFromAsn1(obj)
+        const privateKey = forge.pki.decryptRsaPrivateKey(pem, password)
         if (privateKey === null) {
-          return callback(new Error('Cannot read the peer private key'))
+          return callback(new Error('Cannot read the key, most likely the password is wrong'))
         }
-        const pem = forge.pki.encryptRsaPrivateKey(privateKey, this._());
-        return fs.writeFile(keyPath, pem, (err) => {
-          if (err) return callback(err)
+        const newpem = forge.pki.encryptRsaPrivateKey(privateKey, this._());
+        return self.store.put(dsname, newpem, (err) => {
+        if (err) return callback(err)
 
           this._getKeyInfo(name, callback)
         })
@@ -273,16 +251,53 @@ class Keystore {
     })
   }
 
+  importPeer (name, peer, callback) {
+    const self = this
+    if (!validateKeyName(name)) {
+      return callback(new Error(`Invalid key name '${name}'`))
+    }
+    if (!peer || !peer.privKey) {
+      return callback(new Error('Peer.privKey \is required'))
+    }
+    const dsname = DsName(name)
+    self.store.has(dsname, (err, exists) => {
+      if (exists) return callback(new Error(`Key '${name}' already exists'`))
+
+      const privateKeyProtobuf = peer.marshalPrivKey()
+      libp2pCrypto.keys.unmarshalPrivateKey(privateKeyProtobuf, (err, key) => {
+        try {
+          const der = key.marshal()
+          const buf = forge.util.createBuffer(der.toString('binary'));
+          const obj = forge.asn1.fromDer(buf)
+          const privateKey = forge.pki.privateKeyFromAsn1(obj)
+          if (privateKey === null) {
+            return callback(new Error('Cannot read the peer private key'))
+          }
+          const pem = forge.pki.encryptRsaPrivateKey(privateKey, this._());
+          return self.store.put(dsname, pem, (err) => {
+            if (err) return callback(err)
+
+            this._getKeyInfo(name, callback)
+          })
+        } catch (err) {
+          callback(err)
+        }
+      })
+    })
+  }
+
   _getKeyInfo (name, callback) {
+    const self = this
     if (!validateKeyName(name)) {
       return callback(new Error(`Invalid key name '${name}'`))
     }
 
-    const keyPath = path.join(this.store, name + keyExtension)
-    fs.readFile(keyPath, 'utf8', (err, pem) => {
+    const dsname = DsName(name)
+    this.store.get(dsname, (err, res) => {
       if (err) {
         return callback(new Error(`Key '${name}' does not exist. ${err.message}`))
       }
+      const pem = res.toString()
       try {
         const privateKey = forge.pki.decryptRsaPrivateKey(pem, this._())
         util.keyId(privateKey, (err, kid) => {
@@ -290,8 +305,11 @@ class Keystore {
 
           const info = {
             name: name,
-            id: kid,
-            path: keyPath
+            id: kid
+          }
+          // Hack for our tests.
+          if (self.store._encode) {
+            info.path = self.store._encode(dsname).file
           }
           return callback(null, info)
         })
@@ -310,14 +328,15 @@ class Keystore {
       return callback(new Error('Data is required'))
     }
 
-    const keyPath = path.join(this.store, name + keyExtension)
-    fs.readFile(keyPath, 'utf8', (err, key) => {
+    const dsname = DsName(name)
+    this.store.get(dsname, (err, res) => {
       if (err) {
         return callback(new Error(`Key '${name}' does not exist. ${err.message}`))
       }
+      const pem = res.toString()
       try {
         const privateKey = {
-          key: key,
+          key: pem,
           passphrase: this._(),
           padding: crypto.constants.RSA_PKCS1_PADDING
         }
@@ -341,14 +360,15 @@ class Keystore {
       return callback(new Error('Data is required'))
     }
 
-    const keyPath = path.join(this.store, name + keyExtension)
-    fs.readFile(keyPath, 'utf8', (err, key) => {
+    const dsname = DsName(name)
+    this.store.get(dsname, (err, res) => {
       if (err) {
         return callback(new Error(`Key '${name}' does not exist. ${err.message}`))
       }
+      const pem = res.toString()
       try {
         const privateKey = {
-          key: key,
+          key: pem,
           passphrase: this._(),
           padding: crypto.constants.RSA_PKCS1_PADDING
         }
