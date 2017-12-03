@@ -46,15 +46,19 @@ describe('key chain', () => {
   })
 
   it('needs a pass phrase to encrypt a key', () => {
-    expect(() => new Keystore(emptyDatastore)).to.throw()
+    expect(() => new KeyChain(emptyDatastore)).to.throw()
   })
 
   it ('needs a NIST SP 800-132 non-weak pass phrase', () => {
-    expect(() => new Keystore(emptyDatastore, { passPhrase: '< 20 character'})).to.throw()
+    expect(() => new KeyChain(emptyDatastore, { passPhrase: '< 20 character'})).to.throw()
   })
 
   it('needs a store to persist a key', () => {
-    expect(() => new Keystore(null, { passPhrase: passPhrase})).to.throw()
+    expect(() => new KeyChain(null, { passPhrase: passPhrase})).to.throw()
+  })
+
+  it('has default options', () => {
+    expect(KeyChain.options).to.exist()
   })
 
   describe('store', () => {

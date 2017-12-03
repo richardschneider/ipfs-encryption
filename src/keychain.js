@@ -92,6 +92,10 @@ class KeyChain {
     this.cms = new CMS(this)
   }
 
+  static get options() {
+    return defaultOptions
+  }
+
   createKey (name, type, size, callback) {
     const self = this
 
