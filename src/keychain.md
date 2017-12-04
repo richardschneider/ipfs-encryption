@@ -75,7 +75,7 @@ const defaultOptions = {
 }
 ```
 
-![key storage](doc/private-key.png?raw=true)
+![key storage](../doc/private-key.png?raw=true)
 
 ### Physical storage
 
