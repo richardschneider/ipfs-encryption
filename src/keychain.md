@@ -56,7 +56,7 @@ The key id is the SHA-256 [multihash](https://github.com/multiformats/multihash)
 
 ## Private key storage
 
-A private key is stored as an encrypted PKCS 8 structure in the PEM format. It is protected by a key generated from the key chain's *passPhrase* using **PBKDF2**.  Its file extension is `.p8.pem`. 
+A private key is stored as an encrypted PKCS 8 structure in the PEM format. It is protected by a key generated from the key chain's *passPhrase* using **PBKDF2**.  Its file extension is `.p8`. 
 
 See [details](https://github.com/richardschneider/ipfs-encryption/issues/10) for an in-depth discussion.
 
@@ -74,6 +74,9 @@ const defaultOptions = {
   }
 }
 ```
+
+![key storage](doc/private-key.png?raw=true)
+
 ### Physical storage
 
 The actual physical storage of an encrypted key is left to implementations of [interface-datastore](https://github.com/ipfs/interface-datastore/).  A key benifit is that now the key chain can be used in browser with the [js-datastore-level](https://github.com/ipfs/js-datastore-level) implementation.
