@@ -313,7 +313,8 @@ describe('keychain', () => {
       })
     })
 
-    it('cannot be imported with the wrong password', (done) => {
+    it('cannot be imported with the wrong password', function (done) {
+      this.timeout(5 * 1000)
       ks.importKey('a-new-name-for-import', pemKey, 'not the password', (err, key) => {
         expect(err).to.exist()
         done()

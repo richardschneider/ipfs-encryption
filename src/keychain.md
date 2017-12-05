@@ -9,6 +9,7 @@ A secure key chain implemented in JS
 - Uses PBKDF2 for a "stetched" key encryption key
 - Enforces NIST SP 800-131A and NIST SP 800-132
 - Uses PKCS 7: CMS (aka RFC 5652) to provide cryptographically protected messages
+- Delays reporting errors to slow down brute force attacks
 
 # Usage
 
