@@ -56,7 +56,9 @@ class Keychain {
       throw new Error('store is required')
     }
     this.store = store
-    this.store.opts.extension = keyExtension
+    if (this.store.opts) {
+      this.store.opts.extension = keyExtension
+    }
 
     const opts = deepmerge(defaultOptions, options)
 
@@ -83,7 +85,7 @@ class Keychain {
       opts.dek.keyLength,
       opts.dek.hash)
     dek = forge.util.bytesToHex(dek)
-    this._ = () => dek
+    Object.defineProperty(this, '_', { value: () => dek })
 
     // JS magick
     this._getKeyInfo = this.findKeyByName = this._getKeyInfo.bind(this)
