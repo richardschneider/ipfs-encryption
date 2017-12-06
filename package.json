@@ -23,7 +23,7 @@
   "homepage": "https://github.com/richardschneider/ipfs-encryption#readme",
   "dependencies": {
     "async": "^2.6.0",
-    "deepmerge": "^2.0.1",
+    "deepmerge": "^1.5.2",
     "interface-datastore": "^0.4.1",
     "libp2p-crypto": "^0.10.3",
     "multihashes": "^0.4.12",
