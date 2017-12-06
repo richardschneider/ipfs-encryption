@@ -76,10 +76,17 @@ module.exports = (datastore1, datastore2) => {
         })
       })
 
-      it('has a name, id and path', () => {
+      it('has a name and id', () => {
         expect(rsaKeyInfo).to.have.property('name', rsaKeyName)
         expect(rsaKeyInfo).to.have.property('id')
-        expect(rsaKeyInfo).to.have.property('path')
+      })
+
+      it('is encrypted PEM encoded PKCS #8', (done) => {
+        ks._getPrivateKey(rsaKeyName, (err, pem) => {
+          expect(err).to.not.exist()
+          expect(pem).to.startsWith('-----BEGIN ENCRYPTED PRIVATE KEY-----')
+          done()
+        })
       })
 
       it('does not overwrite existing key', (done) => {

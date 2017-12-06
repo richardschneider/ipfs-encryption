@@ -2,7 +2,6 @@
 
 const forge = require('node-forge')
 const pki = forge.pki
-const fs = require('fs');
 const multihash = require('multihashes')
 const rsaUtils = require('libp2p-crypto/src/keys/rsa-utils')
 const rsaClass = require('libp2p-crypto/src/keys/rsa-class')

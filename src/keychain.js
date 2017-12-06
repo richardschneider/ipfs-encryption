@@ -309,6 +309,25 @@ class Keychain {
     })
   }
 
+  /**
+   * Gets the private key as PEM encoded PKCS #8
+   *
+   * @param {string} name
+   * @param {function(Error, string)} callback
+   */
+  _getPrivateKey (name, callback) {
+    const self = this
+    if (!validateKeyName(name)) {
+      return _error(callback, `Invalid key name '${name}'`)
+    }
+    this.store.get(DsName(name), (err, res) => {
+      if (err) {
+        return _error(callback, `Key '${name}' does not exist. ${err.message}`)
+      }
+      callback(null, res.toString())
+    })
+  }
+
   _getKeyInfo (name, callback) {
     const self = this
     if (!validateKeyName(name)) {
@@ -329,10 +348,6 @@ class Keychain {
           const info = {
             name: name,
             id: kid
-          }
-          // Hack for our tests.
-          if (self.store._encode) {
-            info.path = self.store._encode(dsname).file
           }
           return callback(null, info)
         })

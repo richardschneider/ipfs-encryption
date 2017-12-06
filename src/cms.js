@@ -2,7 +2,6 @@
 
 const async = require('async')
 const forge = require('node-forge')
-const fs = require('fs')
 const util = require('./util')
 
 class CMS {
@@ -20,34 +19,29 @@ class CMS {
       return callback(new Error('Data is required'))
     }
 
-    self.keystore.findKeyByName(name, (err, ki) => {
+    self.keystore._getPrivateKey(name, (err, key) => {
       if (err) {
-        return callback(new Error(`Key '${name}' does not exist. ${err.message}`))
+        return callback(err)
       }
 
-      fs.readFile(ki.path, 'utf8', (err, key) => {
-        if (err) {
-          return callback(new Error(`Key '${name}' does not exist. ${err.message}`))
-        }
-        try {
-          const privateKey = forge.pki.decryptRsaPrivateKey(key, self.keystore._())
-          util.certificateForKey(privateKey, (err, certificate) => {
-            if (err) return callback(err)
+      try {
+        const privateKey = forge.pki.decryptRsaPrivateKey(key, self.keystore._())
+        util.certificateForKey(privateKey, (err, certificate) => {
+          if (err) return callback(err)
 
-            // create a p7 enveloped message
-            const p7 = forge.pkcs7.createEnvelopedData()
-            p7.addRecipient(certificate)
-            p7.content = forge.util.createBuffer(plain)
-            p7.encrypt()
+          // create a p7 enveloped message
+          const p7 = forge.pkcs7.createEnvelopedData()
+          p7.addRecipient(certificate)
+          p7.content = forge.util.createBuffer(plain)
+          p7.encrypt()
 
-            // convert message to DER
-            const der = forge.asn1.toDer(p7.toAsn1()).getBytes()
-            callback(null, Buffer.from(der, 'binary'))
-          })
-        } catch (err) {
-          callback(err)
-        }
-      })
+          // convert message to DER
+          const der = forge.asn1.toDer(p7.toAsn1()).getBytes()
+          callback(null, Buffer.from(der, 'binary'))
+        })
+      } catch (err) {
+        callback(err)
+      }
     })
   }
 
@@ -86,7 +80,7 @@ class CMS {
 
         async.waterfall([
           (cb) => self.keystore.findKeyById(r.keyId, cb),
-          (key, cb) => fs.readFile(key.path, 'utf8', cb)
+          (key, cb) => self.keystore._getPrivateKey(key.name, cb)
         ], (err, pem) => {
           if (err) return callback(err);
 
