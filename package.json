@@ -35,7 +35,9 @@
     "chai": "^4.1.2",
     "chai-string": "^1.4.0",
     "datastore-fs": "^0.4.1",
+    "datastore-level": "^0.7.0",
     "dirty-chai": "^2.0.1",
+    "level-js": "^2.2.4",
     "mocha": "^4.0.1",
     "peer-id": "^0.10.2",
     "rimraf": "^2.6.2"
